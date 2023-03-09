@@ -115,7 +115,7 @@ async def s(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 z_data = json.loads(z_alist_post.text)
                 z_file_url = [z_data['data']['raw_url']]
 
-                if folder == True:
+                if folder:
                     folder_tg_text = "📁文件夹："
                     z_folder = ""
                     z_folder_f = ""
