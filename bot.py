@@ -84,6 +84,8 @@ async def s(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not data['data']['content']:
             await context.bot.send_message(chat_id=update.effective_chat.id, text="未搜索到文件，换个关键词试试吧")
         else:
+            search1 = await context.bot.send_message(chat_id=update.effective_chat.id, text="搜索中...")
+
             name_list = []  ##文件/文件夹名字
             parent_list = []  ##文件/文件夹路径
             size_list = []  ##文件大小
@@ -134,11 +136,12 @@ async def s(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 #########################
                 tg_text += tg_textt
                 jishu += 1
-            await context.bot.send_message(chat_id=update.effective_chat.id,
-                                           text=tg_text,
-                                           parse_mode=telegram.constants.ParseMode.HTML,
-                                           disable_web_page_preview=True
-                                           )
+            await context.bot.edit_message_text(chat_id=update.effective_chat.id,
+                                                message_id=search1.message_id,
+                                                text=tg_text,
+                                                parse_mode=telegram.constants.ParseMode.HTML,
+                                                disable_web_page_preview=True
+                                                )
 
 
 if __name__ == '__main__':
