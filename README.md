@@ -32,11 +32,11 @@ git clone https://github.com/z-mio/alist-telegram-search-bot.git && cd alist-tel
 **3.修改 bot.py 里的配置信息**
 
 ``` 
-alist_host = "http://127.0.0.1:5244"  ##用于调用alist api，一般填你的alist域名就行
-alist_web = ""  ##你的alist域名
-alsit_token = ""  ##你的alist token
-bot_key = ""  ##bot的key，用 @BotFather 获取
-per_page = 5  ##搜索结果返回数量
+alist_host = "http://127.0.0.1:5244"  ## alist ip:port
+alist_web = "https://" ## 你的alist域名
+alsit_token = "" ## alist token
+bot_key = "" ## bot的key，用 @BotFather 获取
+per_page = 5 ## 搜索结果返回数量，默认5条
 ```
 
 **4.启动bot**
@@ -55,4 +55,4 @@ nohup python3 bot.py > botlog.log 2>&1 &
 
 **5.开始使用**
 
-发送指令 `/s + 文件名` 进行搜索
+私聊或群里发送指令 `/s + 文件名` 进行搜索
