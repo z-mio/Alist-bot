@@ -26,7 +26,7 @@ apt install python3-pip
 
 **2.将项目克隆到本地**
 ``` 
-git clone https://github.com/z-mio/alist-search-tg-bot.git && cd alist-telegram-search-bot && pip3 install -r requirements.txt
+git clone https://github.com/z-mio/alist-search-tg-bot.git && cd alist-search-tg-bot && pip3 install -r requirements.txt
 ```
 
 **3.修改 bot.py 里的配置信息**
