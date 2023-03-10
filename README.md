@@ -57,6 +57,8 @@ nohup python3 bot.py > botlog.log 2>&1 &
 
 ## 开始使用
 
+私聊或群里发送指令
+
 **指令列表：**
 
 - start - 开始
