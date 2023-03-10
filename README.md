@@ -20,7 +20,7 @@
 ![更多搜索结果](https://m.360buyimg.com/babel/jfs/t20250308/72563/37/26636/298059/6408b461Fef22bf8c/97378b473d532012.png)
 </details>
 
-## 食用方法
+## 安装
 
 **1.安装 python3-pip**
 
