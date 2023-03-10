@@ -61,36 +61,44 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def sl(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_chat.id
+    user_id = update.message.from_user.id
+    text_caps = update.message.text
+    sl_str = text_caps.strip("/sl @")
+
     if user_id in admin:
-        text_caps = update.message.text
-        sl_str = text_caps.strip("/sl @")
-        config['per_page'] = int(sl_str)
-        with open('config.yaml', 'w') as f:
-            yaml.dump(config, f)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="已修改搜索结果数量为：" + sl_str)
+        if sl_str.isdigit():
+            config['per_page'] = int(sl_str)
+            with open('config.yaml', 'w') as f:
+                yaml.dump(config, f)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="已修改搜索结果数量为：" + sl_str)
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入正整数")
+        global per_page
+        per_page = config['per_page']
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
-    global per_page
-    per_page = config['per_page']
 
 
 async def zl(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
     text_caps = update.message.text
     zl_str = text_caps.strip("/zl @")
 
-    if zl_str == "1":
-        config['z_url'] = True
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="已开启直链")
-    elif zl_str == "0":
-        config['z_url'] = False
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="已关闭直链")
+    if user_id in admin:
+        if zl_str == "1":
+            config['z_url'] = True
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="已开启直链")
+        elif zl_str == "0":
+            config['z_url'] = False
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="已关闭直链")
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入1或0(1=开，0=关)")
+        with open('config.yaml', 'w') as f:
+            yaml.safe_dump(config, f)
+        global z_url
+        z_url = config['z_url']
     else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入1或0(1=开，0=关)")
-    with open('config.yaml', 'w') as f:
-        yaml.safe_dump(config, f)
-    global z_url
-    z_url = config['z_url']
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
 
 
 async def s(update: Update, context: ContextTypes.DEFAULT_TYPE):
