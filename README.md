@@ -32,15 +32,15 @@ git clone https://github.com/z-mio/alist-search-tg-bot.git && cd alist-search-tg
 **3.修改 config.yaml 里的配置信息**
 
 ``` 
-admin: #管理员用户id,可以添加多个
+admin: ##管理员用户id,可以添加多个
   - 123456789
   - 456789456
-alist_host: "http://127.0.0.1:5244" #alist ip:port
-alist_web: "https://" #你的alist域名
-alsit_token: "" #alist token
-bot_key: "" #bot的key，用 @BotFather 获取
-per_page: 5 #搜索结果返回数量
-z_url: true #是否开启直链
+alist_host: "http://127.0.0.1:5244" ##alist ip:port
+alist_web: "https://" ##你的alist域名
+alsit_token: "" ##alist token
+bot_key: "" ##bot的key，用 @BotFather 获取
+per_page: 5 ##搜索结果返回数量
+z_url: true ##是否开启直链
 ```
 
 **4.启动bot**
