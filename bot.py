@@ -3,19 +3,23 @@
 import json
 import logging
 import math
+import yaml
 
 import requests
 import telegram
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-#############################################################################
-alist_host = "http://127.0.0.1:5244"  ## alist ip:port
-alist_web = "https://"  ## 你的alist域名
-alsit_token = ""  ## alist token
-bot_key = ""  ## bot的key，用 @BotFather 获取
-per_page = 5  ## 搜索结果返回数量，默认5条
-#############################################################################
+with open("config.yaml", 'r', encoding='utf-8') as f:
+    config = yaml.safe_load(f)
+
+admin = config['admin']  ## 管理员 id
+alist_host = config['alist_host']  ## alist ip:port
+alist_web = config['alist_web']  ## 你的alist域名
+alsit_token = config['alsit_token']  ## alist token
+bot_key = config['bot_key']  ## bot的key，用 @BotFather 获取
+per_page = config['per_page']  ## 搜索结果返回数量，默认5条
+z_url = config['z_url']  ## 是否开启直链
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -56,6 +60,39 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="发送 /s+文件名 进行搜索")
 
 
+async def sl(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_chat.id
+    if user_id in admin:
+        text_caps = update.message.text
+        sl_str = text_caps.strip("/sl @")
+        config['per_page'] = int(sl_str)
+        with open('config.yaml', 'w') as f:
+            yaml.dump(config, f)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="已修改搜索结果数量为：" + sl_str)
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
+    global per_page
+    per_page = config['per_page']
+
+
+async def zl(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text_caps = update.message.text
+    zl_str = text_caps.strip("/zl @")
+
+    if zl_str == "1":
+        config['z_url'] = True
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="已开启直链")
+    elif zl_str == "0":
+        config['z_url'] = False
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="已关闭直链")
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入1或0(1=开，0=关)")
+    with open('config.yaml', 'w') as f:
+        yaml.safe_dump(config, f)
+    global z_url
+    z_url = config['z_url']
+
+
 async def s(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text_caps = update.message.text
     s_str = text_caps.strip("/s @")
@@ -65,7 +102,6 @@ async def s(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif s_str == "ybyx_bot":
         await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入文件名")
     else:
-
         ## 搜索文件
         alist_url = alist_host + '/api/fs/search'
         alist_header = {"Authorization": alsit_token,
@@ -108,29 +144,39 @@ async def s(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 file_url = alist_web + path + "/" + file_name
 
                 ## 获取文件直链
+                if z_url == True:
 
-                z_alist_url = alist_host + '/api/fs/get'
-                z_alist_header = {"Authorization": alsit_token,
-                                  'Cache-Control': 'no-cache'
-                                  }
+                    z_alist_url = alist_host + '/api/fs/get'
+                    z_alist_header = {"Authorization": alsit_token,
+                                      'Cache-Control': 'no-cache'
+                                      }
 
-                z_alist_body = {"path": path + "/" + file_name}
-                z_alist_post = requests.post(z_alist_url, json=z_alist_body, headers=z_alist_header)
+                    z_alist_body = {"path": path + "/" + file_name}
+                    z_alist_post = requests.post(z_alist_url, json=z_alist_body, headers=z_alist_header)
 
-                z_data = json.loads(z_alist_post.text)
-                z_file_url = [z_data['data']['raw_url']]
+                    z_data = json.loads(z_alist_post.text)
+                    z_file_url = [z_data['data']['raw_url']]
+                else:
+                    z_file_url = []
 
                 if folder:
                     folder_tg_text = "📁文件夹："
                     z_folder = ""
                     z_folder_f = ""
-                else:
+                    z_url_link = ''
+                elif z_url == True:
                     folder_tg_text = "📄文件："
                     z_folder = "直接下载"
                     z_folder_f = "|"
+                    z_url_link = f'''<a href="{z_file_url[0]}">{z_folder}</a>'''
+                else:
+                    folder_tg_text = "📄文件："
+                    z_folder_f = ""
+                    z_url_link = ''
+
                 #########################
                 tg_textt = f'''{jishu + 1}.{folder_tg_text}{file_name}
-<a href="{file_url}">🌐打开网站</a>|<a href="{z_file_url[0]}">{z_folder}</a>{z_folder_f}大小: {pybyte(file_size)}
+<a href="{file_url}">🌐打开网站</a>|{z_url_link}{z_folder_f}大小: {pybyte(file_size)}
 
 '''
                 #########################
@@ -147,10 +193,14 @@ async def s(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == '__main__':
     application = ApplicationBuilder().token(bot_key).build()
 
-    s_handler = CommandHandler('s', s)
     start_handler = CommandHandler('start', start)
+    s_handler = CommandHandler('s', s)
+    sl_handler = CommandHandler('sl', sl)
+    zl_handler = CommandHandler('zl', zl)
 
     application.add_handler(start_handler)
     application.add_handler(s_handler)
+    application.add_handler(sl_handler)
+    application.add_handler(zl_handler)
 
     application.run_polling()
