@@ -1,6 +1,6 @@
 
 
-# Telegram-Alist文件搜索机器人
+# Telegram-Alist bot
 
 - 可以用来搜索 Alist 里的文件，然后返回 文件名、文件大小、文件链接和文件直链
 - 支持自定义搜索结果数量和是否开启直链
