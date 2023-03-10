@@ -1,4 +1,4 @@
-admin: #管理员 id,可以添加多个
+admin: #管理员用户id,可以添加多个
   - 123456789
   - 456789456
 alist_host: "http://127.0.0.1:5244" #alist ip:port
