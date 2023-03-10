@@ -37,8 +37,6 @@ alist_host: "http://127.0.0.1:5244" ##alist ip:port
 alist_web: "https://" ##你的alist域名
 alsit_token: "" ##alist token
 bot_key: "" ##bot的key，用 @BotFather 获取
-per_page: 5 ##搜索结果返回数量
-z_url: true ##是否开启直链
 ```
 
 **4.启动bot**
