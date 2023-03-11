@@ -70,8 +70,9 @@ nohup python3 bot.py > botlog.log 2>&1 &
 ```
 start - 开始
 s - 搜索
-sl - 搜索结果数量
-zl - 是否开启直链
+sl - 设置搜索结果数量
+zl - 开启/关闭直链
+vs - 管理存储
 ```
 
 /s + 文件名 进行搜索  
