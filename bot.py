@@ -111,7 +111,8 @@ def main():
     application.add_handler(CommandHandler('sl', sl))
     application.add_handler(CommandHandler('zl', zl))
     application.add_handler(storage.vs_handler)
-    application.add_handler(storage.vs_handler)
+
+
     application.add_handler(storage.button_callback_handler)
 
 
