@@ -1,12 +1,9 @@
 # -*- coding: UTF-8 -*-
 
-import json
 import logging
 import math
 import yaml
 
-import requests
-import telegram
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import search
