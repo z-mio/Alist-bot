@@ -16,9 +16,9 @@
 <details>
 <summary><b>预览图</b></summary>
 
-![搜索](https://i.328888.xyz/2023/03/09/onocX.gif)
+![搜索预览图](https://i.328888.xyz/2023/03/11/soMAw.gif)
 
-![更多搜索结果](https://m.360buyimg.com/babel/jfs/t20250308/72563/37/26636/298059/6408b461Fef22bf8c/97378b473d532012.png)
+![管理存储](https://i.328888.xyz/2023/03/11/ssyA5.png)
 </details>
 
 ## 安装
