@@ -16,7 +16,7 @@ async def s(update, context):
 
     if s_str == "":
         await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入文件名")
-    elif s_str == "ybyx_bot":
+    elif "_bot" in s_str:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入文件名")
     else:
         ## 搜索文件
