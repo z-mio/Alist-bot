@@ -14,9 +14,7 @@ async def s(update, context):
     text_caps = update.message.text
     s_str = text_caps.strip("/s @")
 
-    if s_str == "":
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入文件名")
-    elif "_bot" in s_str:
+    if s_str == "" or "_bot" in s_str:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入文件名")
     else:
         ## 搜索文件
