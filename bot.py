@@ -1,8 +1,12 @@
 # -*- coding: UTF-8 -*-
+import os
 
+import requests
 import logging
 import math
 import yaml
+import json
+import datetime
 
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
@@ -100,13 +104,43 @@ async def zl(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
 
 
+async def bc(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+    if user_id in admin:
+        bc_list = ['setting', 'user', 'storage', 'meta']
+        bc_dic = {'settings': '', 'users': 'users', 'storages': '', 'metas': ''}
+        for i in range(len(bc_list)):
+            bc_url = alist_host + '/api/admin/' + bc_list[i] + '/list'
+            bc_header = {"Authorization": alsit_token, 'accept':'application/json'}
+            bc_post = requests.get(bc_url,  headers=bc_header)
+            data = json.loads(bc_post.text)
+
+            if i == 0:
+                bc_dic[bc_list[i] + 's'] = data['data']
+            else:
+                bc_dic[bc_list[i] + 's'] = data['data']['content']
+
+        data = json.dumps(bc_dic, indent=4,ensure_ascii=False) ## 格式化json
+        now = datetime.datetime.now()
+        current_time = now.strftime("%Y_%m_%d_%H_%M_%S") ## 获取当前时间
+        bc_file_name = ('alist_bot_backup_' + current_time + '.json')
+        with open(bc_file_name, 'w', encoding='utf-8') as b:
+            b.write(str(data))
+        await context.bot.send_document(chat_id=update.effective_chat.id, document=bc_file_name, caption='#Alist配置备份')
+        os.remove(bc_file_name)
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
+
+
 def main():
     application = ApplicationBuilder().token(bot_api).build()
 
     application.add_handler(CommandHandler('start', start))
-    application.add_handler(search.s_handler)
     application.add_handler(CommandHandler('sl', sl))
     application.add_handler(CommandHandler('zl', zl))
+    application.add_handler(CommandHandler('bc', bc))
+
+    application.add_handler(search.s_handler)
     application.add_handler(storage.vs_handler)
 
 
