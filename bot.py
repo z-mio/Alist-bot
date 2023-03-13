@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
-import os
 
+import os
 import requests
 import logging
 import math
@@ -32,7 +32,6 @@ logging.basicConfig(
 ## 字节数转文件大小
 __all__ = ['pybyte']
 
-
 def pybyte(size, dot=2):
     size = float(size)
     # 位 比特 bit
@@ -62,13 +61,35 @@ def pybyte(size, dot=2):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="发送 /s+文件名 进行搜索")
 
-
-async def sl(update: Update, context: ContextTypes.DEFAULT_TYPE):
+## 管理员验证
+async def admin_yz(update, context):
     user_id = update.message.from_user.id
+    if user_id in admin:
+        return True
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
+        return False
+
+## 查看当前配置
+async def cf(update, context):
+    if await admin_yz(update, context):
+        conf_text = f'''
+当前配置：
+    管理员列表：
+    {admin}
+    搜索结果数量：{per_page}
+    是否开启直链：{z_url}
+'''
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=conf_text)
+
+
+## 设置搜索结果数量
+async def sl(update, context):
     text_caps = update.message.text
     sl_str = text_caps.strip("/sl @")
 
-    if user_id in admin:
+    if await admin_yz(update, context):
+        print(admin_yz)
         if sl_str.isdigit():
             config['per_page'] = int(sl_str)
             with open('config.yaml', 'w') as f:
@@ -78,16 +99,14 @@ async def sl(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入正整数")
         global per_page
         per_page = config['per_page']
-    else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
 
 
-async def zl(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
+## 设置直链
+async def zl(update, context):
     text_caps = update.message.text
     zl_str = text_caps.strip("/zl @")
 
-    if user_id in admin:
+    if await admin_yz(update, context):
         if zl_str == "1":
             config['z_url'] = True
             await context.bot.send_message(chat_id=update.effective_chat.id, text="已开启直链")
@@ -100,13 +119,10 @@ async def zl(update: Update, context: ContextTypes.DEFAULT_TYPE):
             yaml.safe_dump(config, f)
         global z_url
         z_url = config['z_url']
-    else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
 
-
-async def bc(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
-    if user_id in admin:
+## 配置备份
+async def bc(update, context):
+    if await admin_yz(update, context):
         bc_list = ['setting', 'user', 'storage', 'meta']
         bc_dic = {'settings': '', 'users': 'users', 'storages': '', 'metas': ''}
         for i in range(len(bc_list)):
@@ -128,8 +144,6 @@ async def bc(update: Update, context: ContextTypes.DEFAULT_TYPE):
             b.write(str(data))
         await context.bot.send_document(chat_id=update.effective_chat.id, document=bc_file_name, caption='#Alist配置备份')
         os.remove(bc_file_name)
-    else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
 
 
 
@@ -140,12 +154,13 @@ def main():
     application.add_handler(CommandHandler('sl', sl))
     application.add_handler(CommandHandler('zl', zl))
     application.add_handler(CommandHandler('bc', bc))
+    application.add_handler(CommandHandler('cf', cf))
 
     application.add_handler(search.s_handler)
     application.add_handler(storage.vs_handler)
 
 
-    application.add_handler(storage.button_callback_handler)
+    application.add_handler(storage.button_get_storage_handler)
 
 
     application.run_polling()

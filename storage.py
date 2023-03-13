@@ -5,12 +5,14 @@ import json
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler, CommandHandler
 
+from bot import admin_yz
+
 mount_path = []
 disabled = []
 id = []
 button_q = []
 
-
+## 获取存储
 async def get_storage(alist_host, alsit_tokenn):
     vs_alist_url = alist_host + '/api/admin/storage/list'
     vs_alist_header = {"Authorization": alsit_tokenn, }
@@ -38,13 +40,11 @@ async def get_storage(alist_host, alsit_tokenn):
         button_q.append([button])
     return
 
-
+## 查看存储
 async def vs(update, context):
-    from bot import alist_host, alsit_token, admin
+    from bot import alist_host, alsit_token
     from telegram import InlineKeyboardMarkup
-    user_id = update.message.from_user.id
-    if user_id in admin:
-
+    if await admin_yz(update, context):
         await get_storage(alist_host, alsit_token)
 
         reply_button = InlineKeyboardMarkup(button_q)
@@ -52,16 +52,11 @@ async def vs(update, context):
                                         text='点击开启/关闭存储\n存储列表：',
                                         reply_markup=reply_button
                                         )
-    else:
-        await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text="该命令仅管理员可用"
-                                       )
 
-
-async def button_callback(update, context):
-    from bot import alist_host, alsit_token, admin
-    user_id = update.message.from_user.id
-    if user_id in admin:
+## 按钮调用，开启关闭存储
+async def button_get_storage(update, context):
+    from bot import alist_host, alsit_token
+    if await admin_yz(update, context):
 
         query = update.callback_query
         # 获取被按下按钮的 callback_data 值
@@ -83,11 +78,11 @@ async def button_callback(update, context):
         await query.edit_message_text(
             text=of_t + mount_path[i], reply_markup=reply_button
         )
-    else:
-        await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text="该命令仅管理员可用"
-                                       )
+
+
+
+
 
 vs_handler = CommandHandler('vs', vs)
 
-button_callback_handler = CallbackQueryHandler(button_callback)
+button_get_storage_handler = CallbackQueryHandler(button_get_storage)
