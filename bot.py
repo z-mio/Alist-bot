@@ -132,6 +132,7 @@ async def bc(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
 
 
+
 def main():
     application = ApplicationBuilder().token(bot_api).build()
 
