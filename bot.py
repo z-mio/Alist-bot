@@ -158,7 +158,7 @@ def main():
 
     application.add_handler(search.s_handler)
     application.add_handler(storage.vs_handler)
-
+    application.add_handler(storage.cs_handler)
 
     application.add_handler(storage.button_get_storage_handler)
 
