@@ -16,15 +16,49 @@
 - [ ] 其他功能还没想好
 
 
+**预览图:**
+
 <details>
-<summary><b>预览图</b></summary>
+<summary><b>搜索</b></summary>
 
 ![搜索预览图](https://i.328888.xyz/2023/03/11/soMAw.gif)
 
+</details>
+
+<details>
+<summary><b>查看配置</b></summary>
+
+![查看配置](https://i.328888.xyz/2023/03/14/9ccqZ.png)
+
+</details>
+
+<details>
+<summary><b>启用/禁用 存储</b></summary>
+
 ![管理存储](https://i.328888.xyz/2023/03/11/ssyA5.png)
 
-![配置备份](https://i.328888.xyz/2023/03/13/9V2FL.png)
 </details>
+
+
+
+<details>
+<summary><b>配置备份</b></summary>
+
+![配置备份](https://i.328888.xyz/2023/03/13/9V2FL.png)
+
+</details>
+
+
+
+<details>
+<summary><b>复制存储</b></summary>
+
+复制存储为负载均衡，存储排序会自动加1，自动添加存储备注  
+`.balance` 后面的数字为当前时间，  
+![复制存储](https://i.328888.xyz/2023/03/14/9cAMV.gif)![复制存储](https://i.328888.xyz/2023/03/14/9c08w.png)
+
+</details>
+
 
 ## 安装
 
@@ -79,6 +113,7 @@ s - 搜索
 sl - 设置搜索结果数量
 zl - 开启/关闭 直链
 vs - 启用/停用 存储
+cs - 复制存储
 bc - 备份Alist配置
 ```
 
@@ -90,4 +125,5 @@ bc - 备份Alist配置
 /sl + 数字 设置搜索结果数量  
 /zl + 1/0 开启/关闭 发送直链  
 /vs 启用/停用 存储  
+/cs 复制存储
 /bc 备份Alist配置  
