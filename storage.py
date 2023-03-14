@@ -13,6 +13,8 @@ disabled = []
 id = []
 button_v = []
 button_c = []
+
+
 ## 获取存储
 async def get_storage(alist_host, alsit_tokenn):
     vs_alist_url = alist_host + '/api/admin/storage/list'
@@ -45,6 +47,7 @@ async def get_storage(alist_host, alsit_tokenn):
         button_c.append([button_cs])
     return
 
+
 ## 查看存储
 async def vs(update, context):
     if await admin_yz(update, context):
@@ -53,6 +56,7 @@ async def vs(update, context):
                                         text='点击开启/关闭存储\n存储列表：',
                                         reply_markup=InlineKeyboardMarkup(button_v)
                                         )
+
 
 ## 复制存储
 async def cs(update, context):
@@ -64,9 +68,21 @@ async def cs(update, context):
                                         )
 
 
+async def ns(update, context):
+    if await admin_yz(update, context):
+        ns_storage = [{
+
+        }]
+
+        ns_alist_url = alist_host + '/api/admin/storage/create'
+        ns_alist_header = {"Authorization": alsit_token}
+        ns_alist_body = ns_storage[0]
+        ns_alist_post = requests.post(ns_alist_url, json=ns_alist_body, headers=ns_alist_header)
+        ns_json = json.loads(ns_alist_post.text)
+
 
 ## 按钮调用，开启关闭存储
-async def button_get_storage(update, context):
+async def button_get_storage(update):
     query = update.callback_query
     # 获取被按下按钮的 callback_data 值
     button_value = query.data
@@ -106,14 +122,14 @@ async def button_get_storage(update, context):
         now = datetime.datetime.now()
         current_time = now.strftime("%M%S")  ## 获取当前时间
 
-        if  '.balance' not in cs_mount_path:
+        if '.balance' not in cs_mount_path:
             cs_storage[0]['mount_path'] = cs_mount_path + '.balance' + current_time
         else:
             cs_mount_path_text = re.sub('.balance.*', '', cs_mount_path)
             cs_storage[0]['mount_path'] = cs_mount_path_text + '.balance' + current_time
 
-        cs_storage[0]['order'] = cs_order + 1 ## 基于当前配置的排序加1
-        cs_storage[0]['remark'] = mount_path[bvj] + ' -> ' + cs_storage[0]['mount_path']
+        cs_storage[0]['order'] = cs_order + 1  ## 基于当前配置的排序加1
+        cs_storage[0]['remark'] = mount_path[bvj] + ' -> ' + cs_storage[0]['mount_path']  ##修改配置文件
 
         cs_alist_url = alist_host + '/api/admin/storage/create'
         cs_alist_header = {"Authorization": alsit_token}
@@ -128,11 +144,7 @@ async def button_get_storage(update, context):
         )
 
 
-
-
-
-
-
 vs_handler = CommandHandler('vs', vs)
 cs_handler = CommandHandler('cs', cs)
+ns_handler = CommandHandler('ns', ns)
 button_get_storage_handler = CallbackQueryHandler(button_get_storage)
