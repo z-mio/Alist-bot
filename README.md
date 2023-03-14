@@ -83,7 +83,7 @@ admin: ##管理员用户id,可以添加多个
 alist_host: "http://127.0.0.1:5244" ##alist ip:port
 alist_web: "https://" ##你的alist域名
 alsit_token: "" ##alist token
-bot_key: "" ##bot的key，用 @BotFather 获取
+bot_api: "" ##bot的key，用 @BotFather 获取
 ```
 
 **4.启动bot**
@@ -125,5 +125,5 @@ bc - 备份Alist配置
 /sl + 数字 设置搜索结果数量  
 /zl + 1/0 开启/关闭 发送直链  
 /vs 启用/停用 存储  
-/cs 复制存储
+/cs 复制存储  
 /bc 备份Alist配置  
