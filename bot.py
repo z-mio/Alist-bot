@@ -27,6 +27,7 @@ bot_api = config['bot_api']  ## bot的key，用 @BotFather 获取
 per_page = config['per_page']  ## 搜索结果返回数量，默认5条
 z_url = config['z_url']  ## 是否开启直链
 
+## bot菜单
 bot_menu = [BotCommand(command="start", description="开始"),
             BotCommand(command="s", description="搜索文件"),
             BotCommand(command="cf", description="查看当前配置"),
