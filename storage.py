@@ -8,11 +8,11 @@ from telegram.ext import CallbackQueryHandler, CommandHandler
 
 from bot import admin_yz, alist_host, alsit_token
 
-mount_path = []
-disabled = []
-id = []
-button_v = []
-button_c = []
+mount_path = [] ## 存储路径
+disabled = [] ## 存储是否禁用
+id = [] ## 存储id
+button_v = [] ## 开关存储的按钮
+button_c = [] ## 复制存储的按钮
 
 
 ## 获取存储
@@ -54,7 +54,7 @@ async def vs(update, context):
         await get_storage(alist_host, alsit_token)
         await update.message.reply_text(reply_to_message_id=update.message.message_id,
                                         text='点击开启/关闭存储\n存储列表：',
-                                        reply_markup=InlineKeyboardMarkup(button_v)
+                                        reply_markup= InlineKeyboardMarkup(button_v)
                                         )
 
 
@@ -70,13 +70,16 @@ async def cs(update, context):
 
 async def ns(update, context):
     if await admin_yz(update, context):
-        ns_storage = [{
+        webdav_storage = {
+            {
 
-        }]
+            }
+
+        }
 
         ns_alist_url = alist_host + '/api/admin/storage/create'
         ns_alist_header = {"Authorization": alsit_token}
-        ns_alist_body = ns_storage[0]
+        ns_alist_body = webdav_storage
         ns_alist_post = requests.post(ns_alist_url, json=ns_alist_body, headers=ns_alist_header)
         ns_json = json.loads(ns_alist_post.text)
 
