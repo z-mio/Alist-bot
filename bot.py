@@ -185,7 +185,7 @@ def main():
     application.add_handler(storage.vs_handler)
     application.add_handler(storage.cs_handler)
     application.add_handler(storage.ns_handler)
-    application.add_handler(storage.button_get_storage_handler)
+    application.add_handler(storage.vs_button_handler)
 
     application.run_polling()
 

@@ -11,9 +11,9 @@ from bot import admin_yz, alist_host, alsit_token
 mount_path = [] ## 存储路径
 disabled = [] ## 存储是否禁用
 id = [] ## 存储id
-button_v = [] ## 开关存储的按钮
-button_c = [] ## 复制存储的按钮
-
+vs_button_list = [] ## 开关存储的按钮
+cs_button_list = [] ## 复制存储的按钮
+ns_button_list = [] ## 支持添加的存储的按钮
 
 ## 获取存储
 async def get_storage(alist_host, alsit_tokenn):
@@ -25,8 +25,8 @@ async def get_storage(alist_host, alsit_tokenn):
     mount_path.clear()
     disabled.clear()
     id.clear()
-    button_v.clear()
-    button_c.clear()
+    vs_button_list.clear()
+    cs_button_list.clear()
     for item in vs_data['data']['content']:
         mount_path.append(item['mount_path'])
         disabled.append(item['disabled'])
@@ -36,15 +36,14 @@ async def get_storage(alist_host, alsit_tokenn):
     global button_js
     global cs_js
     for button_js in range(len(mount_path)):
-        cs_js = button_js + 1001
         if disabled[button_js] == True:
             disabled_a = '❌'
         else:
             disabled_a = '✅'
         button_vs = InlineKeyboardButton(mount_path[button_js] + disabled_a, callback_data=str(button_js))
-        button_cs = InlineKeyboardButton(mount_path[button_js] + disabled_a, callback_data=str(cs_js))
-        button_v.append([button_vs])
-        button_c.append([button_cs])
+        button_cs = InlineKeyboardButton(mount_path[button_js] + disabled_a, callback_data=str(button_js + 1001))
+        vs_button_list.append([button_vs])
+        cs_button_list.append([button_cs])
     return
 
 
@@ -54,7 +53,7 @@ async def vs(update, context):
         await get_storage(alist_host, alsit_token)
         await update.message.reply_text(reply_to_message_id=update.message.message_id,
                                         text='点击开启/关闭存储\n存储列表：',
-                                        reply_markup= InlineKeyboardMarkup(button_v)
+                                        reply_markup= InlineKeyboardMarkup(vs_button_list)
                                         )
 
 
@@ -64,28 +63,26 @@ async def cs(update, context):
         await get_storage(alist_host, alsit_token)
         await update.message.reply_text(reply_to_message_id=update.message.message_id,
                                         text='点击复制存储\n存储列表：',
-                                        reply_markup=InlineKeyboardMarkup(button_c)
+                                        reply_markup=InlineKeyboardMarkup(cs_button_list)
                                         )
 
 
+## 添加存储
 async def ns(update, context):
     if await admin_yz(update, context):
-        webdav_storage = {
-            {
-
-            }
-
-        }
-
-        ns_alist_url = alist_host + '/api/admin/storage/create'
-        ns_alist_header = {"Authorization": alsit_token}
-        ns_alist_body = webdav_storage
-        ns_alist_post = requests.post(ns_alist_url, json=ns_alist_body, headers=ns_alist_header)
-        ns_json = json.loads(ns_alist_post.text)
+        storage_list = ['WebDav','Onedrive'] ## 支持添加的存储列表
+        global storage_list_js
+        for storage_list_js in range(len(storage_list)):
+            button_ns = InlineKeyboardButton(storage_list[storage_list_js], callback_data=str(storage_list_js + 2001))
+            ns_button_list.append([button_ns])
+        await update.message.reply_text(reply_to_message_id=update.message.message_id,
+                                        text='支持添加的存储：',
+                                        reply_markup=InlineKeyboardMarkup(ns_button_list)
+                                        )
 
 
 ## 按钮调用，开启关闭存储
-async def button_get_storage(update):
+async def vs_button(update, context):
     query = update.callback_query
     # 获取被按下按钮的 callback_data 值
     button_value = query.data
@@ -103,9 +100,10 @@ async def button_get_storage(update):
         await get_storage(alist_host, alsit_token)
         await query.edit_message_text(
             text=of_t + mount_path[bvj],
-            reply_markup=InlineKeyboardMarkup(button_v)
+            reply_markup=InlineKeyboardMarkup(vs_button_list)
         )
-    elif 2000 >= bvj >= 1000:
+
+    elif 2000 > bvj >= 1000:
         bvj -= 1001
 
         cs_alist_url = alist_host + '/api/admin/storage/get?id=' + str(id[int(bvj)])
@@ -143,11 +141,20 @@ async def button_get_storage(update):
         await get_storage(alist_host, alsit_token)
         await query.edit_message_text(
             text='已复制\n' + mount_path[bvj] + ' -> ' + cs_storage[0]['mount_path'],
-            reply_markup=InlineKeyboardMarkup(button_c)
+            reply_markup=InlineKeyboardMarkup(cs_button_list)
         )
+
+    elif 3000 > bvj >= 2000:
+        bvj -= 2001
+
+        print(bvj)
+
+
+
+
 
 
 vs_handler = CommandHandler('vs', vs)
 cs_handler = CommandHandler('cs', cs)
 ns_handler = CommandHandler('ns', ns)
-button_get_storage_handler = CallbackQueryHandler(button_get_storage)
+vs_button_handler = CallbackQueryHandler(vs_button)
