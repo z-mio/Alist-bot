@@ -76,7 +76,7 @@ def pybyte(size, dot=2):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="发送 /s+文件名 进行搜索")
-    await telegram.Bot(token=bot_api).set_my_commands(bot_menu)
+
 
 ## 管理员验证
 async def admin_yz(update, context):
@@ -86,6 +86,12 @@ async def admin_yz(update, context):
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
         return False
+
+## 设置菜单
+async def menu(update, context):
+    if await admin_yz(update, context):
+        await telegram.Bot(token=bot_api).set_my_commands(bot_menu)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="菜单设置成功")
 
 
 ## 查看当前配置
@@ -133,7 +139,7 @@ async def zl(update, context):
             config['z_url'] = False
             await context.bot.send_message(chat_id=update.effective_chat.id, text="已关闭直链")
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入1或0(1=开，0=关)")
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="请在命令后加上1或0(1=开，0=关)")
         with open('config.yaml', 'w') as f:
             yaml.safe_dump(config, f)
         global z_url
@@ -172,6 +178,7 @@ def main():
     application.add_handler(CommandHandler('zl', zl))
     application.add_handler(CommandHandler('bc', bc))
     application.add_handler(CommandHandler('cf', cf))
+    application.add_handler(CommandHandler('menu', menu))
 
     application.add_handler(search.s_handler)
     application.add_handler(storage.vs_handler)
