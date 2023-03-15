@@ -68,24 +68,10 @@ async def cs(update, context):
                                         )
 
 
-async def ns(update, context):
-    if await admin_yz(update, context):
-        webdav_storage = {
-            {
-
-            }
-
-        }
-
-        ns_alist_url = alist_host + '/api/admin/storage/create'
-        ns_alist_header = {"Authorization": alsit_token}
-        ns_alist_body = webdav_storage
-        ns_alist_post = requests.post(ns_alist_url, json=ns_alist_body, headers=ns_alist_header)
-        ns_json = json.loads(ns_alist_post.text)
 
 
 ## 按钮调用，开启关闭存储
-async def button_get_storage(update):
+async def button_get_storage(update, context):
     query = update.callback_query
     # 获取被按下按钮的 callback_data 值
     button_value = query.data
