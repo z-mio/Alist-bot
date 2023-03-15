@@ -4,11 +4,14 @@ import os
 import requests
 import logging
 import math
+
+import telegram
 import yaml
 import json
 import datetime
 
-from telegram import Update
+
+from telegram import Update, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import search
 import storage
@@ -23,6 +26,18 @@ alsit_token = config['alsit_token']  ## alist token
 bot_api = config['bot_api']  ## bot的key，用 @BotFather 获取
 per_page = config['per_page']  ## 搜索结果返回数量，默认5条
 z_url = config['z_url']  ## 是否开启直链
+
+bot_menu = [BotCommand(command="start", description="开始"),
+            BotCommand(command="s", description="搜索文件"),
+            BotCommand(command="cf", description="查看当前配置"),
+            BotCommand(command="sl", description="设置搜索结果数量"),
+            BotCommand(command="zl", description="开启/关闭 直链"),
+            BotCommand(command="vs", description="启用/停用 存储"),
+            BotCommand(command="cs", description="复制存储"),
+            BotCommand(command="bc", description="备份Alist配置"),
+            ]
+
+
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -58,8 +73,10 @@ def pybyte(size, dot=2):
     return human_size
 
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="发送 /s+文件名 进行搜索")
+    await telegram.Bot(token=bot_api).set_my_commands(bot_menu)
 
 ## 管理员验证
 async def admin_yz(update, context):
@@ -69,6 +86,7 @@ async def admin_yz(update, context):
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
         return False
+
 
 ## 查看当前配置
 async def cf(update, context):
@@ -81,6 +99,7 @@ async def cf(update, context):
     是否开启直链：{z_url}
 '''
         await context.bot.send_message(chat_id=update.effective_chat.id, text=conf_text)
+
 
 
 ## 设置搜索结果数量
@@ -145,8 +164,6 @@ async def bc(update, context):
         await context.bot.send_document(chat_id=update.effective_chat.id, document=bc_file_name, caption='#Alist配置备份')
         os.remove(bc_file_name)
 
-
-
 def main():
     application = ApplicationBuilder().token(bot_api).build()
 
@@ -160,11 +177,11 @@ def main():
     application.add_handler(storage.vs_handler)
     application.add_handler(storage.cs_handler)
     application.add_handler(storage.ns_handler)
-
     application.add_handler(storage.button_get_storage_handler)
-
 
     application.run_polling()
 
+
 if __name__ == '__main__':
     main()
+
