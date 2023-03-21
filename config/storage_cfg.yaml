@@ -1,0 +1,6 @@
+storage:
+  extract_folder: front
+  order: 0
+  order_by: name
+  order_direction: asc
+  root_folder_path: /
