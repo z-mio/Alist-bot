@@ -18,7 +18,7 @@
 
 **[@ybyx_bot](http://t.me/ybyx_bot)**
 
-**预览图:**
+### 预览图:
 
 <details>
 <summary><b>搜索</b></summary>
