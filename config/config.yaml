@@ -3,9 +3,9 @@ user:
     - 123456789
     - 456789456
   alist_host: "http://127.0.0.1:5244" #alist ip:port
-  alist_web: "https://" #你的alist域名
   alsit_token: "" #alist token
+  bot_token: ""  # bot的api token，从 @BotFather 获取
 search:
-  bot_api: "" #bot的key，用 @BotFather 获取
+  alist_web: "https://" #你的alist域名
   per_page: 5 #搜索结果返回数量，默认5条
   z_url: true #是否开启直链
