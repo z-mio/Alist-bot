@@ -113,8 +113,6 @@ user:
   bot_token: ""  # bot的api token，从 @BotFather 获取
 search:
   alist_web: "https://" #你的alist域名
-  per_page: 5 #搜索结果返回数量，默认5条
-  z_url: true #是否开启直链
 ```
 
 **4.启动bot**
