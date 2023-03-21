@@ -39,7 +39,6 @@ async def button_callback(update, context):
     # 获取被按下按钮的 callback_data 值
     button_value = query.data
     bvj = button_value
-    print(bvj)
     if bvj.startswith("st"):  ##存储管理菜单
         if bvj == 'st_vs':
             await vs(update, context)
@@ -558,7 +557,7 @@ async def ns_new_b(update, context):
                                                 ])
                                                 )
         except telegram.error.BadRequest as e:
-            print('ns_new_b：', e)
+            pass
         message_text_list.pop()
     return
 
