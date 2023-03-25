@@ -1,5 +1,7 @@
 # Telegram-Alist bot
 
+[![Readme Card](https://github-readme-stats.vercel.app/api/pin/?username=alist-org&repo=alist)](https://github.com/alist-org/alist)  
+
 主要功能：
 
 - [x] 搜索
@@ -113,8 +115,6 @@ user:
   bot_token: ""  # bot的api token，从 @BotFather 获取
 search:
   alist_web: "https://" #你的alist域名
-  per_page: 5 #搜索结果返回数量，默认5条
-  z_url: true #是否开启直链
 ```
 
 **4.启动bot**

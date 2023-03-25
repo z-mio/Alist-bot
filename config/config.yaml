@@ -3,7 +3,7 @@ user:
     - 123456789
     - 456789456
   alist_host: "http://127.0.0.1:5244" #alist ip:port
-  alsit_token: "" #alist token
+  alist_token: "" #alist token
   bot_token: ""  # bot的api token，从 @BotFather 获取
 search:
   alist_web: "https://" #你的alist域名
