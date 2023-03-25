@@ -37,6 +37,7 @@ def cfg():
     z_url = config['search']['z_url']  ## 是否开启直链
     return
 
+
 cfg()
 
 ## bot菜单
@@ -156,6 +157,7 @@ def translate_key(old_dict, translation_dict):
         # 如果翻译字典里没有当前的key，就返回原字符串
         else:
             return key
+
     new_dict = {}  # 存放翻译后key的字典
     # 遍历原字典里所有的键值对
     for key, value in old_dict.items():
@@ -166,6 +168,7 @@ def translate_key(old_dict, translation_dict):
         else:
             new_dict[translate_zh(key)] = value
     return new_dict
+
 
 #####################################################################################
 #####################################################################################

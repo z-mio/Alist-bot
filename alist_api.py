@@ -7,10 +7,10 @@ def search(file_name, per_page, alist_host, alist_token):
     url = alist_host + '/api/fs/search'
     header = {"Authorization": alist_token, }
     body = {"parent": "/",
-                  "keywords": file_name,
-                  "page": 1,
-                  "per_page": per_page
-                  }
+            "keywords": file_name,
+            "page": 1,
+            "per_page": per_page
+            }
     result = requests.post(url, json=body, headers=header)
     return result
 
@@ -19,8 +19,8 @@ def search(file_name, per_page, alist_host, alist_token):
 def fs_get(path, alist_host, alist_token):
     url = alist_host + '/api/fs/get'
     header = {"Authorization": alist_token,
-                      'Cache-Control': 'no-cache'
-                      }
+              'Cache-Control': 'no-cache'
+              }
     result = requests.post(url, json=path, headers=header)
     return result
 
@@ -65,6 +65,7 @@ def storage_delete(storage_id, alist_host, alist_token):
     return result
 
 
+## 开启存储
 def storage_enable(storage_id, alist_host, alist_token):
     url = alist_host + '/api/admin/storage/enable?id=' + str(storage_id)
     header = {"Authorization": alist_token}
