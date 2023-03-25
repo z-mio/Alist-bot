@@ -1,19 +1,15 @@
 # -*- coding: UTF-8 -*-
 
-import os
-import requests
+import datetime
+import json
 import logging
-import math
+import os
 
+import requests
 import telegram
 import yaml
-import json
-import datetime
-
 from telegram import Update, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-import search
-import storage
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -51,92 +47,73 @@ bot_menu = [BotCommand(command="start", description="开始"),
             ]
 
 
+def admin_yz(func):
+    async def wrapper(update, context):
+        user_id = update.effective_user.id
+        if user_id in admin:
+            return await func(update, context)
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
+
+    return wrapper
+
+
 ## 开始
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="发送 /s+文件名 进行搜索")
 
 
 ## 设置菜单
+@admin_yz
 async def menu(update, context):
-    if await admin_yz(update, context):
-        await telegram.Bot(token=bot_token).set_my_commands(bot_menu)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="菜单设置成功")
+    await telegram.Bot(token=bot_token).set_my_commands(bot_menu)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="菜单设置成功")
 
 
 ## 查看当前配置
+@admin_yz
 async def cf(update, context):
-    if await admin_yz(update, context):
-        with open("config/cn_dict.json", 'r', encoding='utf-8') as ff:
-            cn_dict = json.load(ff)
-        a = translate_key(config, cn_dict["config_cn"])
-        b = translate_key(a, cn_dict["common"])
-        text = json.dumps(b, indent=4, ensure_ascii=False)
-        await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text=f'<code>{text}</code>',
-                                       parse_mode=telegram.constants.ParseMode.HTML)
+    with open("config/cn_dict.json", 'r', encoding='utf-8') as ff:
+        cn_dict = json.load(ff)
+    a = translate_key(config, cn_dict["config_cn"])
+    b = translate_key(a, cn_dict["common"])
+    text = json.dumps(b, indent=4, ensure_ascii=False)
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text=f'<code>{text}</code>',
+                                   parse_mode=telegram.constants.ParseMode.HTML)
 
 
 ## 配置备份
+@admin_yz
 async def bc(update, context):
-    if await admin_yz(update, context):
-        bc_list = ['setting', 'user', 'storage', 'meta']
-        bc_dic = {'settings': '', 'users': 'users', 'storages': '', 'metas': ''}
-        for i in range(len(bc_list)):
-            bc_url = alist_host + '/api/admin/' + bc_list[i] + '/list'
-            bc_header = {"Authorization": alist_token, 'accept': 'application/json'}
-            bc_post = requests.get(bc_url, headers=bc_header)
-            data = json.loads(bc_post.text)
-
-            if i == 0:
-                bc_dic[bc_list[i] + 's'] = data['data']
-            else:
-                bc_dic[bc_list[i] + 's'] = data['data']['content']
-
-        data = json.dumps(bc_dic, indent=4, ensure_ascii=False)  ## 格式化json
-        now = datetime.datetime.now()
-        current_time = now.strftime("%Y_%m_%d_%H_%M_%S")  ## 获取当前时间
-        bc_file_name = ('alist_bot_backup_' + current_time + '.json')
-        with open(bc_file_name, 'w', encoding='utf-8') as b:
-            b.write(str(data))
-        await context.bot.send_document(chat_id=update.effective_chat.id, document=bc_file_name,
-                                        caption='#Alist配置备份')
-        os.remove(bc_file_name)
+    bc_list = ['setting', 'user', 'storage', 'meta']
+    bc_dic = {'settings': '', 'users': 'users', 'storages': '', 'metas': ''}
+    for i in range(len(bc_list)):
+        bc_url = alist_host + '/api/admin/' + bc_list[i] + '/list'
+        bc_header = {"Authorization": alist_token, 'accept': 'application/json'}
+        bc_post = requests.get(bc_url, headers=bc_header)
+        data = json.loads(bc_post.text)
+        if i == 0:
+            bc_dic[bc_list[i] + 's'] = data['data']
+        else:
+            bc_dic[bc_list[i] + 's'] = data['data']['content']
+    data = json.dumps(bc_dic, indent=4, ensure_ascii=False)  ## 格式化json
+    now = datetime.datetime.now()
+    current_time = now.strftime("%Y_%m_%d_%H_%M_%S")  ## 获取当前时间
+    bc_file_name = ('alist_bot_backup_' + current_time + '.json')
+    with open(bc_file_name, 'w', encoding='utf-8') as b:
+        b.write(str(data))
+    await context.bot.send_document(chat_id=update.effective_chat.id, document=bc_file_name,
+                                    caption='#Alist配置备份')
+    os.remove(bc_file_name)
 
 
 #####################################################################################
 ## 函数
 #####################################################################################
 
-## 字节数转文件大小
-__all__ = ['pybyte']
 
-
-def pybyte(size, dot=2):
-    size = float(size)
-    # 位 比特 bit
-    if 0 <= size < 1:
-        human_size = str(round(size / 0.125, dot)) + 'b'
-    # 字节 字节 Byte
-    elif 1 <= size < 1024:
-        human_size = str(round(size, dot)) + 'B'
-    # 千字节 千字节 Kilo Byte
-    elif math.pow(1024, 1) <= size < math.pow(1024, 2):
-        human_size = str(round(size / math.pow(1024, 1), dot)) + 'KB'
-    # 兆字节 兆 Mega Byte
-    elif math.pow(1024, 2) <= size < math.pow(1024, 3):
-        human_size = str(round(size / math.pow(1024, 2), dot)) + 'MB'
-    # 吉字节 吉 Giga Byte
-    elif math.pow(1024, 3) <= size < math.pow(1024, 4):
-        human_size = str(round(size / math.pow(1024, 3), dot)) + 'GB'
-    # 太字节 太 Tera Byte
-    elif math.pow(1024, 4) <= size < math.pow(1024, 5):
-        human_size = str(round(size / math.pow(1024, 4), dot)) + 'TB'
-    # 负数
-    else:
-        raise ValueError('{}() takes number than or equal to 0, but less than 0 given.'.format(pybyte.__name__))
-    return human_size
-
-
+'''
 ## 管理员验证
 async def admin_yz(update: Update, context):
     user_id = update.effective_user.id
@@ -145,6 +122,7 @@ async def admin_yz(update: Update, context):
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
         return False
+'''
 
 
 ## 字典key翻译，输入：待翻译字典，翻译字典 输出：翻译后的新字典
@@ -174,6 +152,8 @@ def translate_key(old_dict, translation_dict):
 #####################################################################################
 
 def main():
+    import search
+    import storage
     application = ApplicationBuilder().token(bot_token).build()
 
     application.add_handler(CommandHandler('start', start))

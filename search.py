@@ -1,51 +1,50 @@
 # -*- coding: UTF-8 -*-
-import telegram
 import json
+import math
+
+import telegram
 import yaml
 from telegram.ext import CommandHandler
+
 from alist_api import search, fs_get
+from bot import admin_yz, config, cfg, alist_host, alist_web, alist_token, per_page, z_url
 
 
 ## 设置搜索结果数量
+@admin_yz
 async def sl(update, context):
-    from bot import admin_yz, config, cfg
     text_caps = update.message.text
     sl_str = text_caps.strip("/sl @")
-
-    if await admin_yz(update, context):
-        if sl_str.isdigit():
-            config['search']['per_page'] = int(sl_str)
-            with open('config/config.yaml', 'w') as f:
-                yaml.dump(config, f)
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="已修改搜索结果数量为：" + sl_str)
-        else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入正整数")
-        cfg()
+    if sl_str.isdigit():
+        config['search']['per_page'] = int(sl_str)
+        with open('config/config.yaml', 'w') as f:
+            yaml.dump(config, f)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="已修改搜索结果数量为：" + sl_str)
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入正整数")
+    cfg()
 
 
 ## 设置直链
+@admin_yz
 async def zl(update, context):
-    from bot import admin_yz, config, cfg
     text_caps = update.message.text
     zl_str = text_caps.strip("/zl @")
-
-    if await admin_yz(update, context):
-        if zl_str == "1":
-            config['search']['z_url'] = True
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="已开启直链")
-        elif zl_str == "0":
-            config['search']['z_url'] = False
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="已关闭直链")
-        else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="请在命令后加上1或0(1=开，0=关)")
-        with open('config/config.yaml', 'w') as f:
-            yaml.safe_dump(config, f)
-        cfg()
+    if zl_str == "1":
+        config['search']['z_url'] = True
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="已开启直链")
+    elif zl_str == "0":
+        config['search']['z_url'] = False
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="已关闭直链")
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="请在命令后加上1或0(1=开，0=关)")
+    with open('config/config.yaml', 'w') as f:
+        yaml.safe_dump(config, f)
+    cfg()
 
 
 ## 搜索
 async def s(update, context):
-    from bot import alist_host, alist_web, alist_token, per_page, z_url, pybyte
     text_caps = update.message.text
     s_str = text_caps.strip("/s @")
 
@@ -121,6 +120,36 @@ async def s(update, context):
                                                     parse_mode=telegram.constants.ParseMode.HTML,
                                                     disable_web_page_preview=True
                                                     )
+
+
+## 字节数转文件大小
+__all__ = ['pybyte']
+
+
+def pybyte(size, dot=2):
+    size = float(size)
+    # 位 比特 bit
+    if 0 <= size < 1:
+        human_size = str(round(size / 0.125, dot)) + 'b'
+    # 字节 字节 Byte
+    elif 1 <= size < 1024:
+        human_size = str(round(size, dot)) + 'B'
+    # 千字节 千字节 Kilo Byte
+    elif math.pow(1024, 1) <= size < math.pow(1024, 2):
+        human_size = str(round(size / math.pow(1024, 1), dot)) + 'KB'
+    # 兆字节 兆 Mega Byte
+    elif math.pow(1024, 2) <= size < math.pow(1024, 3):
+        human_size = str(round(size / math.pow(1024, 2), dot)) + 'MB'
+    # 吉字节 吉 Giga Byte
+    elif math.pow(1024, 3) <= size < math.pow(1024, 4):
+        human_size = str(round(size / math.pow(1024, 3), dot)) + 'GB'
+    # 太字节 太 Tera Byte
+    elif math.pow(1024, 4) <= size < math.pow(1024, 5):
+        human_size = str(round(size / math.pow(1024, 4), dot)) + 'TB'
+    # 负数
+    else:
+        raise ValueError('{}() takes number than or equal to 0, but less than 0 given.'.format(pybyte.__name__))
+    return human_size
 
 
 s_handler = CommandHandler('s', s)

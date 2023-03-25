@@ -10,7 +10,7 @@ from telegram.ext import CallbackQueryHandler, CommandHandler, filters, MessageH
 
 from alist_api import storage_update, storage_create, storage_list, storage_get, storage_delete, storage_disable, \
     storage_enable
-from bot import admin_yz, alist_host, alist_token, translate_key
+from bot import alist_host, alist_token, translate_key, admin_yz
 
 mount_path = []  ## 存储路径
 disabled = []  ## 存储是否禁用
@@ -38,96 +38,97 @@ with open("config/storage_cfg.yaml", 'r', encoding='utf-8') as f:
 
 ## 按钮回调
 async def button_callback(update, context):
+    from bot import admin
     query = update.callback_query
+    user_id = query.from_user.id
     # 获取被按下按钮的 callback_data 值
     button_value = query.data
     bvj = button_value
-    if bvj.startswith("st"):  ##存储管理菜单
-        if bvj == 'st_vs':
-            await vs(update, context)
-        elif bvj == 'st_cs':
-            await cs(update, context)
-        elif bvj == 'st_ns':
-            await ns(update, context)
-        elif bvj == 'st_ds':
-            await ds(update, context)
-        elif bvj == 'st_return':
-            context.chat_data["st_storage_cfg_amend"] = False
-            await st_return(update, context)
-        elif bvj == 'st_close':
-            await st_close(update, context)
-        elif bvj.startswith("st_storage"):
-            if bvj.startswith("st_storage_copy"):
-                if bvj == 'st_storage_copy_list':
-                    await st_storage_copy_list(update, context)
-                elif bvj.startswith('st_storage_copy_cfg'):
-                    bvj = int(bvj.strip("st_storage_copy_cfg"))
-                    await st_storage_copy_cfg(bvj, query, update, context)
-            elif bvj == 'st_storage_amend':
-                await st_storage_amend(update, context)
-            elif bvj == 'st_storage_cfg_amend':
-                context.chat_data["st_storage_cfg_amend"] = True
-                await st_storage_amend_callback(update, context)
-            elif bvj == 'st_storage_cfg_off':
+    if user_id in admin:
+        if bvj.startswith("st"):  ##存储管理菜单
+            if bvj == 'st_vs':
+                await vs(update, context)
+            elif bvj == 'st_cs':
+                await cs(update, context)
+            elif bvj == 'st_ns':
+                await ns(update, context)
+            elif bvj == 'st_ds':
+                await ds(update, context)
+            elif bvj == 'st_return':
                 context.chat_data["st_storage_cfg_amend"] = False
-                await st_storage_amend(update, context)
-
-
-
-
-    elif bvj.startswith("vs"):  ## 开关存储
-        if bvj == 'vs_onall':
-            await vs_on_off_all(bvj, query)
-        elif bvj == 'st_offall':
-            await vs_on_off_all(bvj, query)
-        else:
-            bvj = int(bvj.strip("vs"))
-            await vs_callback(bvj, query)
-
-    elif bvj.startswith("cs"):  ## 复制存储
-        bvj = int(bvj.strip("cs"))
-        await cs_callback(bvj, query)
-
-    elif bvj.startswith("ds"):  ## 删除存储
-        bvj = int(bvj.strip("ds"))
-        await ds_callback(bvj, query)
-
-    elif bvj.startswith("ns"):  ## 新建存储
-        if 'ns_a' in bvj:
-            bvj_a = int(bvj.strip("ns_a"))
-            await ns_mode_a(bvj_a, query)
-        elif bvj.startswith("ns_re"):
-            if bvj == 'ns_re':  ##撤销添加的配置
-                message_text_list.pop()
-                ns_new_b_list.pop()
-                await ns_r(update, context)
-            elif bvj == 'ns_re_list':  ## 返回可添加存储列表
-                context.chat_data["ns_a"] = False
-                await ns(update, context)
-            elif bvj == 'ns_re_ns_mode_a':  ## 添加单个存储失败后重新添加
-                context.chat_data["ns_a"] = True
-                await ns_mode_a_delete(context)
-            elif bvj == 'ns_re_menu':  ## 添加单个存储_返回存储管理菜单
-                await ns_mode_a_delete(context)
                 await st_return(update, context)
-            elif bvj == 'ns_re_new_b_menu':  ## 添加单个存储_返回存储管理菜单
-                await ns_mode_b_delete(context)
-                await st_return(update, context)
-            elif bvj == 'ns_re_list_mode_b':
+            elif bvj == 'st_close':
+                await st_close(update, context)
+            elif bvj.startswith("st_storage"):
+                if bvj.startswith("st_storage_copy"):
+                    if bvj == 'st_storage_copy_list':
+                        await st_storage_copy_list(update, context)
+                    elif bvj.startswith('st_storage_copy_cfg'):
+                        bvj = int(bvj.strip("st_storage_copy_cfg"))
+                        await st_storage_copy_cfg(bvj, query, update, context)
+                elif bvj == 'st_storage_amend':
+                    await st_storage_amend(update, context)
+                elif bvj == 'st_storage_cfg_amend':
+                    context.chat_data["st_storage_cfg_amend"] = True
+                    await st_storage_amend_callback(update, context)
+                elif bvj == 'st_storage_cfg_off':
+                    context.chat_data["st_storage_cfg_amend"] = False
+                    await st_storage_amend(update, context)
+
+        elif bvj.startswith("vs"):  ## 开关存储
+            if bvj == 'vs_onall':
+                await vs_on_off_all(bvj, query)
+            elif bvj == 'st_offall':
+                await vs_on_off_all(bvj, query)
+            else:
+                bvj = int(bvj.strip("vs"))
+                await vs_callback(bvj, query)
+
+        elif bvj.startswith("cs"):  ## 复制存储
+            bvj = int(bvj.strip("cs"))
+            await cs_callback(bvj, query)
+
+        elif bvj.startswith("ds"):  ## 删除存储
+            bvj = int(bvj.strip("ds"))
+            await ds_callback(bvj, query)
+
+        elif bvj.startswith("ns"):  ## 新建存储
+            if 'ns_a' in bvj:
+                bvj_a = int(bvj.strip("ns_a"))
+                await ns_mode_a(bvj_a, query)
+            elif bvj.startswith("ns_re"):
+                if bvj == 'ns_re':  ##撤销添加的配置
+                    message_text_list.pop()
+                    ns_new_b_list.pop()
+                    await ns_r(update, context)
+                elif bvj == 'ns_re_list':  ## 返回可添加存储列表
+                    context.chat_data["ns_a"] = False
+                    await ns(update, context)
+                elif bvj == 'ns_re_ns_mode_a':  ## 添加单个存储失败后重新添加
+                    context.chat_data["ns_a"] = True
+                    await ns_mode_a_delete(context)
+                elif bvj == 'ns_re_menu':  ## 添加单个存储_返回存储管理菜单
+                    await ns_mode_a_delete(context)
+                    await st_return(update, context)
+                elif bvj == 'ns_re_new_b_menu':  ## 添加单个存储_返回存储管理菜单
+                    await ns_mode_b_delete(context)
+                    await st_return(update, context)
+                elif bvj == 'ns_re_list_mode_b':
+                    context.chat_data["ns_b"] = False
+                    await ns_re_list_mode_b(context)
+                    await ns(update, context)
+
+            elif 'ns_b' in bvj:  ## 多个模式，发送模板后监听下一条消息
+                bvj_b = int(bvj.strip("ns_b"))
+                await ns_mode_b(bvj_b, query, update)
+            elif bvj == 'ns_sp':  ##  开始批量新建存储
                 context.chat_data["ns_b"] = False
-                await ns_re_list_mode_b(context)
-                await ns(update, context)
-
-
-        elif 'ns_b' in bvj:  ## 多个模式，发送模板后监听下一条消息
-            bvj_b = int(bvj.strip("ns_b"))
-            await ns_mode_b(bvj_b, query, update)
-        elif bvj == 'ns_sp':  ##  开始批量新建存储
-            context.chat_data["ns_b"] = False
-            await ns_new_b_start(update, context)
-        else:
-            bvj_sn = int(bvj.strip("ns"))  ##  发送选择模式菜单
-            await ns_mode(bvj_sn, query, update, context)
+                await ns_new_b_start(update, context)
+            else:
+                bvj_sn = int(bvj.strip("ns"))  ##  发送选择模式菜单
+                await ns_mode(bvj_sn, query, update, context)
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
 
 
 #####################################################################################
@@ -157,47 +158,45 @@ async def echo(update, context):
 
 
 ## 存储管理菜单
+@admin_yz
 async def st(update, context):
-    if await admin_yz(update, context):
-        global st_button
-        global storage_menu_button
-        st_button = [
-            [
-                InlineKeyboardButton('⚙️存储管理', callback_data='st_set')
-            ],
-            [
-                InlineKeyboardButton('⏯开关存储', callback_data='st_vs'),
-                InlineKeyboardButton('📋复制存储', callback_data='st_cs')
-            ],
-            [
-                InlineKeyboardButton('🆕新建存储', callback_data='st_ns'),
-                InlineKeyboardButton('🗑️删除存储', callback_data='st_ds')
-            ],
-            [
-                InlineKeyboardButton('📋复制存储配置', callback_data='st_storage_copy_list'),
-                InlineKeyboardButton('🛠️修改默认配置', callback_data='st_storage_amend')
-            ],
-            [
-                InlineKeyboardButton('❌关闭菜单', callback_data='st_close')
-            ]
+    global st_button
+    global storage_menu_button
+    st_button = [
+        [
+            InlineKeyboardButton('⚙️存储管理', callback_data='st_set')
+        ],
+        [
+            InlineKeyboardButton('⏯开关存储', callback_data='st_vs'),
+            InlineKeyboardButton('📋复制存储', callback_data='st_cs')
+        ],
+        [
+            InlineKeyboardButton('🆕新建存储', callback_data='st_ns'),
+            InlineKeyboardButton('🗑️删除存储', callback_data='st_ds')
+        ],
+        [
+            InlineKeyboardButton('📋复制存储配置', callback_data='st_storage_copy_list'),
+            InlineKeyboardButton('🛠️修改默认配置', callback_data='st_storage_amend')
+        ],
+        [
+            InlineKeyboardButton('❌关闭菜单', callback_data='st_close')
         ]
-        sl = storage_list(alist_host, alist_token)
-        sl_json = json.loads(sl.text)
-        zcc = len(sl_json['data']['content'])
-
-        content_list = sl_json["data"]["content"]
-        jysl = 0
-
-        for item in content_list:
-            if item["disabled"] == True:
-                jysl += 1
-        qysl = zcc - jysl
-        text = f'存储数量：{zcc}\n启用：{qysl}\n禁用：{jysl}'
-        storage_menu_button = await context.bot.send_message(chat_id=update.effective_chat.id,
-                                                             text=text,
-                                                             reply_markup=InlineKeyboardMarkup(st_button),
-                                                             parse_mode=telegram.constants.ParseMode.HTML
-                                                             )
+    ]
+    sl = storage_list(alist_host, alist_token)
+    sl_json = json.loads(sl.text)
+    zcc = len(sl_json['data']['content'])
+    content_list = sl_json["data"]["content"]
+    jysl = 0
+    for item in content_list:
+        if item["disabled"] == True:
+            jysl += 1
+    qysl = zcc - jysl
+    text = f'存储数量：{zcc}\n启用：{qysl}\n禁用：{jysl}'
+    storage_menu_button = await context.bot.send_message(chat_id=update.effective_chat.id,
+                                                         text=text,
+                                                         reply_markup=InlineKeyboardMarkup(st_button),
+                                                         parse_mode=telegram.constants.ParseMode.HTML
+                                                         )
 
 
 ## 返回存储管理菜单
@@ -366,16 +365,21 @@ async def vs_callback(bvj, query):
 async def vs_on_off_all(bvj, query):
     command = storage_enable if bvj == 'vs_onall' else storage_disable
     action = '开启中...' if bvj == 'vs_onall' else '关闭中...'
-
+    await query.edit_message_text(
+        text=action,
+        reply_markup=InlineKeyboardMarkup(button_list))
     for i, is_disabled in enumerate(disabled):
         if is_disabled:
             command(id[i], alist_host, alist_token)
             await get_storage(alist_host, alist_token, callback_data_pr='vs')
             button_list.insert(1, vs_all_button)
             button_list.insert(-1, vs_all_button)
-            await query.edit_message_text(
-                text=action,
-                reply_markup=InlineKeyboardMarkup(button_list))
+            try:
+                await query.edit_message_text(
+                    text=action,
+                    reply_markup=InlineKeyboardMarkup(button_list))
+            except telegram.error.BadRequest:
+                pass
 
 
 ## 复制存储
