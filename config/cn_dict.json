@@ -14,9 +14,13 @@
     "extract_folder": "提取文件夹",
     "disabled": "禁用",
     "status": "状态",
-    "modified": "修改时间"
+    "modified": "修改时间",
+    "enable_sign": "启用签名"
   },
   "additional": {
+    "head_size": "Head大小",
+    "url_structure": "Url结构",
+    "tenant_id": "租户ID",
     "paths": "路径",
     "AUSHELLPORTAL": "AUSHELLPORTAL",
     "page_size": "分页大小",

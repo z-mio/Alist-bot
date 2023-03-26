@@ -56,6 +56,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -168,6 +176,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -314,6 +330,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -451,6 +475,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -555,6 +587,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -733,6 +773,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -862,6 +910,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -983,6 +1039,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -1071,6 +1135,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -1200,6 +1272,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -1354,6 +1434,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -1482,6 +1570,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -1636,6 +1732,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -1773,15 +1877,23 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
       {
         "name": "root_folder_path",
         "type": "string",
-        "default": "",
+        "default": "/",
         "options": "",
-        "required": false,
+        "required": true,
         "help": ""
       },
       {
@@ -1817,7 +1929,7 @@
       "no_cache": false,
       "no_upload": true,
       "need_ms": false,
-      "default_root": "",
+      "default_root": "/",
       "alert": ""
     }
   },
@@ -1885,6 +1997,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -2007,6 +2127,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -2111,6 +2239,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -2257,6 +2393,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -2393,6 +2537,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -2531,6 +2683,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -2643,6 +2803,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -2773,6 +2941,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -2886,6 +3062,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -2964,6 +3148,167 @@
     ],
     "config": {
       "name": "Onedrive",
+      "local_sort": true,
+      "only_local": false,
+      "only_proxy": false,
+      "no_cache": false,
+      "no_upload": false,
+      "need_ms": false,
+      "default_root": "/",
+      "alert": ""
+    }
+  },
+  "OnedriveAPP": {
+    "common": [
+      {
+        "name": "mount_path",
+        "type": "string",
+        "default": "",
+        "options": "",
+        "required": true,
+        "help": ""
+      },
+      {
+        "name": "order",
+        "type": "number",
+        "default": "",
+        "options": "",
+        "required": false,
+        "help": "use to sort"
+      },
+      {
+        "name": "remark",
+        "type": "text",
+        "default": "",
+        "options": "",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "cache_expiration",
+        "type": "number",
+        "default": "30",
+        "options": "",
+        "required": true,
+        "help": "The cache expiration time for this storage"
+      },
+      {
+        "name": "web_proxy",
+        "type": "bool",
+        "default": "",
+        "options": "",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "webdav_policy",
+        "type": "select",
+        "default": "302_redirect",
+        "options": "302_redirect,use_proxy_url,native_proxy",
+        "required": true,
+        "help": ""
+      },
+      {
+        "name": "down_proxy_url",
+        "type": "text",
+        "default": "",
+        "options": "",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "order_by",
+        "type": "select",
+        "default": "",
+        "options": "name,size,modified",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "order_direction",
+        "type": "select",
+        "default": "",
+        "options": "asc,desc",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "extract_folder",
+        "type": "select",
+        "default": "",
+        "options": "front,back",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
+      }
+    ],
+    "additional": [
+      {
+        "name": "root_folder_path",
+        "type": "string",
+        "default": "/",
+        "options": "",
+        "required": true,
+        "help": ""
+      },
+      {
+        "name": "region",
+        "type": "select",
+        "default": "global",
+        "options": "global,cn,us,de",
+        "required": true,
+        "help": ""
+      },
+      {
+        "name": "client_id",
+        "type": "string",
+        "default": "",
+        "options": "",
+        "required": true,
+        "help": ""
+      },
+      {
+        "name": "client_secret",
+        "type": "string",
+        "default": "",
+        "options": "",
+        "required": true,
+        "help": ""
+      },
+      {
+        "name": "tenant_id",
+        "type": "string",
+        "default": "",
+        "options": "",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "email",
+        "type": "string",
+        "default": "",
+        "options": "",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "chunk_size",
+        "type": "number",
+        "default": "5",
+        "options": "",
+        "required": false,
+        "help": ""
+      }
+    ],
+    "config": {
+      "name": "OnedriveAPP",
       "local_sort": true,
       "only_local": false,
       "only_proxy": false,
@@ -3054,6 +3399,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -3176,6 +3529,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -3288,6 +3649,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -3417,6 +3786,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -3595,6 +3972,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -3715,6 +4100,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -3837,6 +4230,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -3957,6 +4358,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -4087,6 +4496,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -4216,6 +4633,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -4344,6 +4769,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -4570,6 +5003,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -4691,6 +5132,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -4752,6 +5201,119 @@
       "no_upload": false,
       "need_ms": false,
       "default_root": "/",
+      "alert": ""
+    }
+  },
+  "UrlTree": {
+    "common": [
+      {
+        "name": "mount_path",
+        "type": "string",
+        "default": "",
+        "options": "",
+        "required": true,
+        "help": ""
+      },
+      {
+        "name": "order",
+        "type": "number",
+        "default": "",
+        "options": "",
+        "required": false,
+        "help": "use to sort"
+      },
+      {
+        "name": "remark",
+        "type": "text",
+        "default": "",
+        "options": "",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "web_proxy",
+        "type": "bool",
+        "default": "",
+        "options": "",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "webdav_policy",
+        "type": "select",
+        "default": "302_redirect",
+        "options": "302_redirect,use_proxy_url,native_proxy",
+        "required": true,
+        "help": ""
+      },
+      {
+        "name": "down_proxy_url",
+        "type": "text",
+        "default": "",
+        "options": "",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "order_by",
+        "type": "select",
+        "default": "",
+        "options": "name,size,modified",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "order_direction",
+        "type": "select",
+        "default": "",
+        "options": "asc,desc",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "extract_folder",
+        "type": "select",
+        "default": "",
+        "options": "front,back",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
+      }
+    ],
+    "additional": [
+      {
+        "name": "url_structure",
+        "type": "text",
+        "default": "https://jsd.nn.ci/gh/alist-org/alist/README.md\nhttps://jsd.nn.ci/gh/alist-org/alist/README_cn.md\nfolder:\n  CONTRIBUTING.md:1635:https://jsd.nn.ci/gh/alist-org/alist/CONTRIBUTING.md\n  CODE_OF_CONDUCT.md:2093:https://jsd.nn.ci/gh/alist-org/alist/CODE_OF_CONDUCT.md",
+        "options": "",
+        "required": true,
+        "help": "structure:FolderName:\n  [FileName:][FileSize:][Modified:]Url"
+      },
+      {
+        "name": "head_size",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": false,
+        "help": "Use head method to get file size, but it may be failed."
+      }
+    ],
+    "config": {
+      "name": "UrlTree",
+      "local_sort": true,
+      "only_local": false,
+      "only_proxy": false,
+      "no_cache": true,
+      "no_upload": true,
+      "need_ms": false,
+      "default_root": "",
       "alert": ""
     }
   },
@@ -4827,6 +5389,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],
@@ -4957,6 +5527,14 @@
         "options": "front,back",
         "required": false,
         "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
+        "help": ""
       }
     ],
     "additional": [
@@ -5077,6 +5655,14 @@
         "default": "",
         "options": "front,back",
         "required": false,
+        "help": ""
+      },
+      {
+        "name": "enable_sign",
+        "type": "bool",
+        "default": "false",
+        "options": "",
+        "required": true,
         "help": ""
       }
     ],

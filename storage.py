@@ -247,8 +247,8 @@ async def vs(update, context):
     global vs_all_button
     vs_all_button = [
 
-        InlineKeyboardButton('✅开启全部', callback_data='vs_onall'),
-        InlineKeyboardButton('❌关闭全部', callback_data='vs_offall')
+        InlineKeyboardButton('✅开启全部存储', callback_data='vs_onall'),
+        InlineKeyboardButton('❌关闭全部存储', callback_data='vs_offall')
 
     ]
     button_list.insert(1, vs_all_button)
