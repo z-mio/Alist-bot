@@ -47,13 +47,23 @@ bot_menu = [BotCommand(command="start", description="开始"),
             ]
 
 
+## 管理员验证
 def admin_yz(func):
     async def wrapper(update, context):
         user_id = update.effective_user.id
+        try:
+            query = update.callback_query
+            query_user_id = query.from_user.id
+        except AttributeError:
+            query_user_id = 2023
+
         if user_id in admin:
             return await func(update, context)
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
+            if query_user_id in admin:
+                return await func(update, context)
+            else:
+                await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
 
     return wrapper
 
@@ -161,13 +171,19 @@ def main():
     application.add_handler(CommandHandler('cf', cf))
     application.add_handler(CommandHandler('menu', menu))
 
+    # search
     application.add_handler(search.zl_handler)
     application.add_handler(search.sl_handler)
     application.add_handler(search.s_handler)
-    application.add_handler(storage.st_handler)
 
+    # storage
     application.add_handler(storage.echo_handler)
-    application.add_handler(storage.button_callback_handler)
+    application.add_handler(storage.st_handler)
+    application.add_handler(storage.st_button_callback_handler)
+    application.add_handler(storage.vs_button_callback_handler)
+    application.add_handler(storage.cs_button_callback_handler)
+    application.add_handler(storage.ds_button_callback_handler)
+    application.add_handler(storage.ns_button_callback_handler)
 
     application.run_polling()  ## 启动
 

@@ -36,99 +36,121 @@ with open("config/storage_cfg.yaml", 'r', encoding='utf-8') as f:
     storage_cfg = yaml.safe_load(f)
 
 
+#####################################################################################
 ## 按钮回调
-async def button_callback(update, context):
-    from bot import admin
+#####################################################################################
+
+
+## 存储管理菜单 按钮回调
+@admin_yz
+async def st_button_callback(update, context):
     query = update.callback_query
-    user_id = query.from_user.id
-    # 获取被按下按钮的 callback_data 值
-    button_value = query.data
-    bvj = button_value
-    if user_id in admin:
-        if bvj.startswith("st"):  ##存储管理菜单
-            if bvj == 'st_vs':
-                await vs(update, context)
-            elif bvj == 'st_cs':
-                await cs(update, context)
-            elif bvj == 'st_ns':
-                await ns(update, context)
-            elif bvj == 'st_ds':
-                await ds(update, context)
-            elif bvj == 'st_return':
-                context.chat_data["st_storage_cfg_amend"] = False
-                await st_return(update, context)
-            elif bvj == 'st_close':
-                await st_close(update, context)
-            elif bvj.startswith("st_storage"):
-                if bvj.startswith("st_storage_copy"):
-                    if bvj == 'st_storage_copy_list':
-                        await st_storage_copy_list(update, context)
-                    elif bvj.startswith('st_storage_copy_cfg'):
-                        bvj = int(bvj.strip("st_storage_copy_cfg"))
-                        await st_storage_copy_cfg(bvj, query, update, context)
-                elif bvj == 'st_storage_amend':
-                    await st_storage_amend(update, context)
-                elif bvj == 'st_storage_cfg_amend':
-                    context.chat_data["st_storage_cfg_amend"] = True
-                    await st_storage_amend_callback(update, context)
-                elif bvj == 'st_storage_cfg_off':
-                    context.chat_data["st_storage_cfg_amend"] = False
-                    await st_storage_amend(update, context)
+    bvj = query.data
+    print('st_button_callback', bvj)
+    if bvj == 'st_vs':
+        await vs(update, context)
+    elif bvj == 'st_cs':
+        await cs(update, context)
+    elif bvj == 'st_ns':
+        await ns(update, context)
+    elif bvj == 'st_ds':
+        await ds(update, context)
+    elif bvj == 'st_return':
+        context.chat_data["st_storage_cfg_amend"] = False
+        await st_return(update, context)
+    elif bvj == 'st_close':
+        await st_close(update, context)
+    elif bvj.startswith("st_storage"):
+        if bvj.startswith("st_storage_copy"):
+            if bvj == 'st_storage_copy_list':
+                await st_storage_copy_list(update, context)
+            elif bvj.startswith('st_storage_copy_cfg'):
+                bvj = int(bvj.strip("st_storage_copy_cfg"))
+                await st_storage_copy_cfg(bvj, query, update, context)
+        elif bvj == 'st_storage_amend':
+            await st_storage_amend(update, context)
+        elif bvj == 'st_storage_cfg_amend':
+            context.chat_data["st_storage_cfg_amend"] = True
+            await st_storage_amend_callback(update, context)
+        elif bvj == 'st_storage_cfg_off':
+            context.chat_data["st_storage_cfg_amend"] = False
+            await st_storage_amend(update, context)
 
-        elif bvj.startswith("vs"):  ## 开关存储
-            if bvj == 'vs_onall':
-                await vs_on_off_all(bvj, query)
-            elif bvj == 'st_offall':
-                await vs_on_off_all(bvj, query)
-            else:
-                bvj = int(bvj.strip("vs"))
-                await vs_callback(bvj, query)
 
-        elif bvj.startswith("cs"):  ## 复制存储
-            bvj = int(bvj.strip("cs"))
-            await cs_callback(bvj, query)
-
-        elif bvj.startswith("ds"):  ## 删除存储
-            bvj = int(bvj.strip("ds"))
-            await ds_callback(bvj, query)
-
-        elif bvj.startswith("ns"):  ## 新建存储
-            if 'ns_a' in bvj:
-                bvj_a = int(bvj.strip("ns_a"))
-                await ns_mode_a(bvj_a, query)
-            elif bvj.startswith("ns_re"):
-                if bvj == 'ns_re':  ##撤销添加的配置
-                    message_text_list.pop()
-                    ns_new_b_list.pop()
-                    await ns_r(update, context)
-                elif bvj == 'ns_re_list':  ## 返回可添加存储列表
-                    context.chat_data["ns_a"] = False
-                    await ns(update, context)
-                elif bvj == 'ns_re_ns_mode_a':  ## 添加单个存储失败后重新添加
-                    context.chat_data["ns_a"] = True
-                    await ns_mode_a_delete(context)
-                elif bvj == 'ns_re_menu':  ## 添加单个存储_返回存储管理菜单
-                    await ns_mode_a_delete(context)
-                    await st_return(update, context)
-                elif bvj == 'ns_re_new_b_menu':  ## 添加单个存储_返回存储管理菜单
-                    await ns_mode_b_delete(context)
-                    await st_return(update, context)
-                elif bvj == 'ns_re_list_mode_b':
-                    context.chat_data["ns_b"] = False
-                    await ns_re_list_mode_b(context)
-                    await ns(update, context)
-
-            elif 'ns_b' in bvj:  ## 多个模式，发送模板后监听下一条消息
-                bvj_b = int(bvj.strip("ns_b"))
-                await ns_mode_b(bvj_b, query, update)
-            elif bvj == 'ns_sp':  ##  开始批量新建存储
-                context.chat_data["ns_b"] = False
-                await ns_new_b_start(update, context)
-            else:
-                bvj_sn = int(bvj.strip("ns"))  ##  发送选择模式菜单
-                await ns_mode(bvj_sn, query, update, context)
+## 开关存储 按钮回调
+@admin_yz
+async def vs_button_callback(update, context):
+    query = update.callback_query
+    bvj = query.data
+    print('vs_button_callback', bvj)
+    if bvj == 'vs_onall':
+        await vs_on_off_all(bvj, query)
+    elif bvj == 'vs_offall':
+        await vs_on_off_all(bvj, query)
     else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
+        bvj = int(bvj.strip("vs"))
+        await vs_callback(bvj, query)
+
+
+## 复制存储 按钮回调
+@admin_yz
+async def cs_button_callback(update, context):
+    query = update.callback_query
+    bvj = query.data
+    print('cs_button_callback', bvj)
+    bvj = int(bvj.strip("cs"))
+    await cs_callback(bvj, query)
+
+
+## 删除存储 按钮回调
+@admin_yz
+async def ds_button_callback(update, context):
+    query = update.callback_query
+    bvj = query.data
+    print('ds_button_callback', bvj)
+    bvj = int(bvj.strip("ds"))
+    await ds_callback(bvj, query)
+
+
+## 新建存储 按钮回调
+@admin_yz
+async def ns_button_callback(update, context):
+    query = update.callback_query
+    bvj = query.data
+    print('ns_button_callback', bvj)
+    if 'ns_a' in bvj:
+        bvj_a = int(bvj.strip("ns_a"))
+        await ns_mode_a(bvj_a, query)
+    elif bvj.startswith("ns_re"):
+        if bvj == 'ns_re':  ##撤销添加的配置
+            message_text_list.pop()
+            ns_new_b_list.pop()
+            await ns_r(update, context)
+        elif bvj == 'ns_re_list':  ## 返回可添加存储列表
+            context.chat_data["ns_a"] = False
+            await ns(update, context)
+        elif bvj == 'ns_re_ns_mode_a':  ## 添加单个存储失败后重新添加
+            context.chat_data["ns_a"] = True
+            await ns_mode_a_delete(context)
+        elif bvj == 'ns_re_menu':  ## 添加单个存储_返回存储管理菜单
+            await ns_mode_a_delete(context)
+            await st_return(update, context)
+        elif bvj == 'ns_re_new_b_menu':  ## 添加单个存储_返回存储管理菜单
+            await ns_mode_b_delete(context)
+            await st_return(update, context)
+        elif bvj == 'ns_re_list_mode_b':
+            context.chat_data["ns_b"] = False
+            await ns_re_list_mode_b(context)
+            await ns(update, context)
+    elif 'ns_b' in bvj:  ## 多个模式，发送模板后监听下一条消息
+        bvj_b = int(bvj.strip("ns_b"))
+        await ns_mode_b(bvj_b, query, update)
+    elif bvj == 'ns_sp':  ##  开始批量新建存储
+        context.chat_data["ns_b"] = False
+        await ns_new_b_start(update, context)
+    else:
+        bvj_sn = int(bvj.strip("ns"))  ##  发送选择模式菜单
+        await ns_mode(bvj_sn, query, update, context)
 
 
 #####################################################################################
@@ -231,7 +253,7 @@ async def vs(update, context):
     vs_all_button = [
 
         InlineKeyboardButton('✅开启全部', callback_data='vs_onall'),
-        InlineKeyboardButton('❌关闭全部', callback_data='st_offall')
+        InlineKeyboardButton('❌关闭全部', callback_data='vs_offall')
 
     ]
     button_list.insert(1, vs_all_button)
@@ -899,5 +921,12 @@ async def storage_config(name):
 #####################################################################################
 
 st_handler = CommandHandler('st', st)
-button_callback_handler = CallbackQueryHandler(button_callback)  ##按钮回调
-echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)  ##处理普通消息
+
+##  监听按钮
+st_button_callback_handler = CallbackQueryHandler(st_button_callback, pattern=r'^st')  ## 存储设置菜单按钮
+vs_button_callback_handler = CallbackQueryHandler(vs_button_callback, pattern=r'^vs')  ##  开关存储按钮
+cs_button_callback_handler = CallbackQueryHandler(cs_button_callback, pattern=r'^cs')  ##  复制存储按钮
+ds_button_callback_handler = CallbackQueryHandler(ds_button_callback, pattern=r'^ds')  ##  删除存储按钮
+ns_button_callback_handler = CallbackQueryHandler(ns_button_callback, pattern=r'^ns')  ##  新建存储按钮
+
+echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)  ##  处理普通消息
