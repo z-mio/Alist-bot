@@ -36,6 +36,7 @@ def cfg():
 
 cfg()
 
+
 ## bot菜单
 bot_menu = [BotCommand(command="start", description="开始"),
             BotCommand(command="s", description="搜索文件"),
@@ -76,8 +77,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 ## 设置菜单
 @admin_yz
 async def menu(update, context):
-    await telegram.Bot(token=bot_token).set_my_commands(bot_menu)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="菜单设置成功")
+    await telegram.Bot(token=bot_token).set_my_commands(bot_menu)  ##  全部可见
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="菜单设置成功，请退出聊天界面重新进入来刷新菜单")
 
 
 ## 查看当前配置
