@@ -7,7 +7,7 @@ import yaml
 from telegram.ext import CommandHandler
 
 from alist_api import search, fs_get
-from bot import admin_yz, config, cfg, alist_host, alist_web, alist_token, per_page, z_url
+from bot import admin_yz, config, alist_host, alist_web, alist_token, per_page, z_url
 
 
 ## 设置搜索结果数量
@@ -19,10 +19,11 @@ async def sl(update, context):
         config['search']['per_page'] = int(sl_str)
         with open('config/config.yaml', 'w') as f:
             yaml.dump(config, f)
+            global per_page
+            per_page = config['search']['per_page']
         await context.bot.send_message(chat_id=update.effective_chat.id, text="已修改搜索结果数量为：" + sl_str)
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入正整数")
-    cfg()
 
 
 ## 设置直链
@@ -40,7 +41,9 @@ async def zl(update, context):
         await context.bot.send_message(chat_id=update.effective_chat.id, text="请在命令后加上1或0(1=开，0=关)")
     with open('config/config.yaml', 'w') as f:
         yaml.safe_dump(config, f)
-    cfg()
+        global z_url
+        z_url = config['search']['z_url']
+
 
 
 ## 搜索

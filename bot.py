@@ -19,23 +19,13 @@ logging.basicConfig(
 with open("config/config.yaml", 'r', encoding='utf-8') as f:
     config = yaml.safe_load(f)
 
-admin = alist_host = alist_web = alist_token = bot_token = per_page = z_url = False
-
-
-def cfg():
-    global admin, alist_host, alist_web, alist_token, bot_token, per_page, z_url
-    admin = config['user']['admin']  ## 管理员 id
-    alist_host = config['user']['alist_host']  ## alist ip:port
-    alist_web = config['search']['alist_web']  ## 你的alist域名
-    alist_token = config['user']['alist_token']  ## alist token
-    bot_token = config['user']['bot_token']  ## bot的key，用 @BotFather 获取
-    per_page = config['search']['per_page']  ## 搜索结果返回数量，默认5条
-    z_url = config['search']['z_url']  ## 是否开启直链
-    return
-
-
-cfg()
-
+admin = config['user']['admin']  ## 管理员 id
+alist_host = config['user']['alist_host']  ## alist ip:port
+alist_web = config['search']['alist_web']  ## 你的alist域名
+alist_token = config['user']['alist_token']  ## alist token
+bot_token = config['user']['bot_token']  ## bot的key，用 @BotFather 获取
+per_page = config['search']['per_page']  ## 搜索结果返回数量，默认5条
+z_url = config['search']['z_url']  ## 是否开启直链
 
 ## bot菜单
 bot_menu = [BotCommand(command="start", description="开始"),
@@ -84,6 +74,8 @@ async def menu(update, context):
 ## 查看当前配置
 @admin_yz
 async def cf(update, context):
+    with open("config/config.yaml", 'r', encoding='utf-8') as f:
+        config = yaml.safe_load(f)
     with open("config/cn_dict.json", 'r', encoding='utf-8') as ff:
         cn_dict = json.load(ff)
     a = translate_key(config, cn_dict["config_cn"])
@@ -123,17 +115,6 @@ async def bc(update, context):
 ## 函数
 #####################################################################################
 
-
-'''
-## 管理员验证
-async def admin_yz(update: Update, context):
-    user_id = update.effective_user.id
-    if user_id in admin:
-        return True
-    else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
-        return False
-'''
 
 
 ## 字典key翻译，输入：待翻译字典，翻译字典 输出：翻译后的新字典
