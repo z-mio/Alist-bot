@@ -79,7 +79,7 @@ async def st_button_callback(update, context):
 
 ## 开关存储 按钮回调
 @admin_yz
-async def vs_button_callback(update, context):
+async def vs_button_callback(update):
     query = update.callback_query
     bvj = query.data
     print('vs_button_callback', bvj)
@@ -94,7 +94,7 @@ async def vs_button_callback(update, context):
 
 ## 复制存储 按钮回调
 @admin_yz
-async def cs_button_callback(update, context):
+async def cs_button_callback(update):
     query = update.callback_query
     bvj = query.data
     print('cs_button_callback', bvj)
@@ -104,7 +104,7 @@ async def cs_button_callback(update, context):
 
 ## 删除存储 按钮回调
 @admin_yz
-async def ds_button_callback(update, context):
+async def ds_button_callback(update):
     query = update.callback_query
     bvj = query.data
     print('ds_button_callback', bvj)
