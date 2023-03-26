@@ -46,7 +46,6 @@ with open("config/storage_cfg.yaml", 'r', encoding='utf-8') as f:
 async def st_button_callback(update, context):
     query = update.callback_query
     bvj = query.data
-    print('st_button_callback', bvj)
     if bvj == 'st_vs':
         await vs(update, context)
     elif bvj == 'st_cs':
@@ -82,7 +81,6 @@ async def st_button_callback(update, context):
 async def vs_button_callback(update):
     query = update.callback_query
     bvj = query.data
-    print('vs_button_callback', bvj)
     if bvj == 'vs_onall':
         await vs_on_off_all(bvj, query)
     elif bvj == 'vs_offall':
@@ -97,7 +95,6 @@ async def vs_button_callback(update):
 async def cs_button_callback(update):
     query = update.callback_query
     bvj = query.data
-    print('cs_button_callback', bvj)
     bvj = int(bvj.strip("cs"))
     await cs_callback(bvj, query)
 
@@ -107,7 +104,6 @@ async def cs_button_callback(update):
 async def ds_button_callback(update):
     query = update.callback_query
     bvj = query.data
-    print('ds_button_callback', bvj)
     bvj = int(bvj.strip("ds"))
     await ds_callback(bvj, query)
 
@@ -117,7 +113,6 @@ async def ds_button_callback(update):
 async def ns_button_callback(update, context):
     query = update.callback_query
     bvj = query.data
-    print('ns_button_callback', bvj)
     if 'ns_a' in bvj:
         bvj_a = int(bvj.strip("ns_a"))
         await ns_mode_a(bvj_a, query)
