@@ -86,6 +86,7 @@ async def cf(update, context):
                                    text=f'<code>{text}</code>',
                                    parse_mode=telegram.constants.ParseMode.HTML)
 
+
 ## 监听普通消息
 async def echo_bot(update, context):
     if "bc" in context.chat_data and context.chat_data["bc"]:
@@ -95,11 +96,11 @@ async def echo_bot(update, context):
                 note_message_text = message.text
                 await context.bot.delete_message(chat_id=message.chat.id,
                                                  message_id=message.message_id)
-                await context.bot.edit_message_caption(chat_id=bc_message_id.chat.id, message_id=bc_message_id.message_id,
-                                         caption=f'#Alist配置备份\n{note_message_text}')
+                await context.bot.edit_message_caption(chat_id=bc_message_id.chat.id,
+                                                       message_id=bc_message_id.message_id,
+                                                       caption=f'#Alist配置备份\n{note_message_text}')
         else:
             context.chat_data["bc"] = False
-
 
 
 ## 配置备份
@@ -124,7 +125,7 @@ async def bc(update, context):
         b.write(str(data))
     global bc_message_id
     bc_message_id = await context.bot.send_document(chat_id=update.effective_chat.id, document=bc_file_name,
-                                    caption='#Alist配置备份')
+                                                    caption='#Alist配置备份')
     context.chat_data["bc"] = True
     os.remove(bc_file_name)
 
@@ -184,7 +185,6 @@ def main():
     application.add_handler(storage.cs_button_callback_handler)
     application.add_handler(storage.ds_button_callback_handler)
     application.add_handler(storage.ns_button_callback_handler)
-
 
     application.run_polling()  ## 启动
 
