@@ -7,7 +7,7 @@ import yaml
 from telegram.ext import CommandHandler
 
 from alist_api import search, fs_get
-from bot import admin_yz, config, alist_host, alist_web, alist_token, per_page, z_url
+from bot import admin_yz, config, alist_host, alist_web, alist_token
 
 
 ## 设置搜索结果数量
@@ -43,7 +43,6 @@ async def zl(update, context):
         yaml.safe_dump(config, f)
         global z_url
         z_url = config['search']['z_url']
-
 
 
 ## 搜索

@@ -9,7 +9,7 @@ import requests
 import telegram
 import yaml
 from telegram import Update, BotCommand
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -68,7 +68,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @admin_yz
 async def menu(update, context):
     await telegram.Bot(token=bot_token).set_my_commands(bot_menu)  ##  全部可见
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="菜单设置成功，请退出聊天界面重新进入来刷新菜单")
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text="菜单设置成功，请退出聊天界面重新进入来刷新菜单")
 
 
 ## 查看当前配置
@@ -84,6 +85,21 @@ async def cf(update, context):
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text=f'<code>{text}</code>',
                                    parse_mode=telegram.constants.ParseMode.HTML)
+
+## 监听普通消息
+async def echo_bot(update, context):
+    if "bc" in context.chat_data and context.chat_data["bc"]:
+        message = update.message
+        if message.reply_to_message:
+            if message.reply_to_message.message_id == bc_message_id.message_id:
+                note_message_text = message.text
+                await context.bot.delete_message(chat_id=message.chat.id,
+                                                 message_id=message.message_id)
+                await context.bot.edit_message_caption(chat_id=bc_message_id.chat.id, message_id=bc_message_id.message_id,
+                                         caption=f'#Alist配置备份\n{note_message_text}')
+        else:
+            context.chat_data["bc"] = False
+
 
 
 ## 配置备份
@@ -106,15 +122,16 @@ async def bc(update, context):
     bc_file_name = ('alist_bot_backup_' + current_time + '.json')
     with open(bc_file_name, 'w', encoding='utf-8') as b:
         b.write(str(data))
-    await context.bot.send_document(chat_id=update.effective_chat.id, document=bc_file_name,
+    global bc_message_id
+    bc_message_id = await context.bot.send_document(chat_id=update.effective_chat.id, document=bc_file_name,
                                     caption='#Alist配置备份')
+    context.chat_data["bc"] = True
     os.remove(bc_file_name)
 
 
 #####################################################################################
 ## 函数
 #####################################################################################
-
 
 
 ## 字典key翻译，输入：待翻译字典，翻译字典 输出：翻译后的新字典
@@ -152,6 +169,7 @@ def main():
     application.add_handler(CommandHandler('bc', bc))
     application.add_handler(CommandHandler('cf', cf))
     application.add_handler(CommandHandler('menu', menu))
+    application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), echo_bot))
 
     # search
     application.add_handler(search.zl_handler)
@@ -166,6 +184,7 @@ def main():
     application.add_handler(storage.cs_button_callback_handler)
     application.add_handler(storage.ds_button_callback_handler)
     application.add_handler(storage.ns_button_callback_handler)
+
 
     application.run_polling()  ## 启动
 
