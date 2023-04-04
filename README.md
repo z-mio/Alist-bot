@@ -41,7 +41,7 @@
 <details>
 <summary><b>配置备份</b></summary>
 
-![配置备份](https://i.328888.xyz/2023/03/13/9V2FL.png)
+![配置备份](https://i.328888.xyz/2023/04/04/ibJg73.gif)
 
 </details>
 
