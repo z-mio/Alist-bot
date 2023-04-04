@@ -119,17 +119,43 @@ search:
 
 **4.启动bot**
 
-前台启动机器人
+**前台启动bot**
 
 ``` 
 python3 bot.py
 ```
 
-后台启动机器人
 
+**设置开机自启**
+
+以下是一整条命令，一起复制到SSH客户端运行
 ``` 
-nohup python3 bot.py > botlog.log 2>&1 &
+cat > /etc/systemd/system/alist-bot.service <<EOF
+[Unit]
+Description=Alist-bot Service
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/root/Alist-bot
+ExecStart=nohup python3 bot.py > botlog.log 2>&1 &
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+EOF
 ```
+
+然后，执行 `systemctl daemon-reload` 重载配置，现在你可以使用这些命令来管理程序：  
+
+
+启动：`systemctl start alist-bot`  
+停止：`systemctl stop alist-bot`    
+开启开机自启：`systemctl enable alist-bot`  
+关闭开机自启：`systemctl disable alist-bot`  
+重启：`systemctl restart alist-bot`  
+状态：`systemctl status alist-bot`  
 
 ## 开始使用
 
