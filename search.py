@@ -47,6 +47,8 @@ async def zl(update, context):
 
 ## 搜索
 async def s(update, context):
+    per_page = config['search']['per_page']  ## 搜索结果返回数量，默认5条
+    z_url = config['search']['z_url']  ## 是否开启直链
     text_caps = update.message.text
     s_str = text_caps.strip("/s @")
 
