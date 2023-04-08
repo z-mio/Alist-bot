@@ -205,6 +205,14 @@
         "help": ""
       },
       {
+        "name": "root_folder_id",
+        "type": "string",
+        "default": "0",
+        "options": "",
+        "required": true,
+        "help": ""
+      },
+      {
         "name": "order_by",
         "type": "select",
         "default": "file_name",
@@ -218,14 +226,6 @@
         "default": "asc",
         "options": "asc,desc",
         "required": false,
-        "help": ""
-      },
-      {
-        "name": "root_folder_id",
-        "type": "string",
-        "default": "0",
-        "options": "",
-        "required": true,
         "help": ""
       },
       {
@@ -1354,7 +1354,7 @@
         "default": "",
         "options": "",
         "required": false,
-        "help": "If you are using Aliyun ECS in Beijing, you can turn it on to boost the upload speed"
+        "help": "If you are using Aliyun ECS is located in Beijing, you can turn it on to boost the upload speed"
       }
     ],
     "config": {

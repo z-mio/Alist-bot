@@ -78,7 +78,7 @@ async def st_button_callback(update, context):
 
 ## 开关存储 按钮回调
 @admin_yz
-async def vs_button_callback(update):
+async def vs_button_callback(update, context):
     query = update.callback_query
     bvj = query.data
     if bvj == 'vs_onall':
@@ -92,7 +92,7 @@ async def vs_button_callback(update):
 
 ## 复制存储 按钮回调
 @admin_yz
-async def cs_button_callback(update):
+async def cs_button_callback(update, context):
     query = update.callback_query
     bvj = query.data
     bvj = int(bvj.strip("cs"))
@@ -101,7 +101,7 @@ async def cs_button_callback(update):
 
 ## 删除存储 按钮回调
 @admin_yz
-async def ds_button_callback(update):
+async def ds_button_callback(update, context):
     query = update.callback_query
     bvj = query.data
     bvj = int(bvj.strip("ds"))
@@ -305,6 +305,7 @@ async def st_storage_copy_list(update, context):
 
 
 ## 修改存储默认配置
+@admin_yz
 async def st_storage_amend(update, context):
     t = translate_key(translate_key(storage_cfg['storage'], text_dict['common']), text_dict['additional'])
     t = json.dumps(t, indent=4, ensure_ascii=False)
@@ -326,6 +327,7 @@ async def st_storage_amend(update, context):
 
 
 ## 修改存储默认配置_按钮回调
+@admin_yz
 async def st_storage_amend_callback(update, context):
     t = translate_key(translate_key(storage_cfg['storage'], text_dict['common']), text_dict['additional'])
     t = json.dumps(t, indent=4, ensure_ascii=False)
