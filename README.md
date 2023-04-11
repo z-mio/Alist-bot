@@ -14,9 +14,8 @@
     - [x] 复制存储
     - [x] 新建存储
     - [x] 批量新建存储
-- [ ] tg文件离线下载到alist
 - [x] 备份Alist配置到tg
-- [ ] 其他功能还没想好
+
 
 **[@ybyx_bot](http://t.me/ybyx_bot)**
 
@@ -175,7 +174,6 @@ EOF
 /st 存储管理
 /bc 备份Alist配置
 ```
-
 
 
 
