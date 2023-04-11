@@ -3,4 +3,4 @@ storage:
   order: 0
   order_by: name
   order_direction: asc
-  root_folder_path: /
+  root_folder_path: /1

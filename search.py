@@ -1,32 +1,31 @@
 # -*- coding: UTF-8 -*-
 import json
-import math
 
+import math
 import telegram
-import yaml
 from telegram.ext import CommandHandler
 
 from alist_api import search, fs_get
-from bot import admin_yz, config, alist_host, alist_web, alist_token
+from bot import admin_yz
+from config.config import config, per_page, alist_host, alist_token, z_url, alist_web, write_config
 
 
-## 设置搜索结果数量
+# 设置搜索结果数量
 @admin_yz
 async def sl(update, context):
     text_caps = update.message.text
     sl_str = text_caps.strip("/sl @")
     if sl_str.isdigit():
         config['search']['per_page'] = int(sl_str)
-        with open('config/config.yaml', 'w') as f:
-            yaml.dump(config, f)
-            global per_page
-            per_page = config['search']['per_page']
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="已修改搜索结果数量为：" + sl_str)
+        write_config("config/config.yaml", config)
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text=f"已修改搜索结果数量为：{sl_str}"
+        )
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入正整数")
 
 
-## 设置直链
+# 设置直链
 @admin_yz
 async def zl(update, context):
     text_caps = update.message.text
@@ -39,24 +38,19 @@ async def zl(update, context):
         await context.bot.send_message(chat_id=update.effective_chat.id, text="已关闭直链")
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="请在命令后加上1或0(1=开，0=关)")
-    with open('config/config.yaml', 'w') as f:
-        yaml.safe_dump(config, f)
-        global z_url
-        z_url = config['search']['z_url']
+    write_config("config/config.yaml", config)
 
 
-## 搜索
+# 搜索
 async def s(update, context):
-    per_page = config['search']['per_page']  ## 搜索结果返回数量，默认5条
-    z_url = config['search']['z_url']  ## 是否开启直链
     text_caps = update.message.text
     s_str = text_caps.strip("/s @")
 
     if s_str == "" or "_bot" in s_str:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="请输入文件名")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="请加上文件名，例：/s 巧克力")
     else:
-        ## 搜索文件
-        alist_post = search(s_str, per_page, alist_host, alist_token)
+        # 搜索文件
+        alist_post = search(s_str, per_page(), alist_host, alist_token)
 
         alist_post_json = json.loads(alist_post.text)
 
@@ -65,10 +59,10 @@ async def s(update, context):
         else:
             search1 = await context.bot.send_message(chat_id=update.effective_chat.id, text="搜索中...")
 
-            name_list = []  ##文件/文件夹名字
-            parent_list = []  ##文件/文件夹路径
-            size_list = []  ##文件大小
-            is_dir_list = []  ##是否是文件夹
+            name_list = []  # 文件/文件夹名字
+            parent_list = []  # 文件/文件夹路径
+            size_list = []  # 文件大小
+            is_dir_list = []  # 是否是文件夹
             jishu = 0
             tg_text = ""
 
@@ -86,10 +80,10 @@ async def s(update, context):
 
                 file_url = alist_web + path + "/" + file_name
 
-                ## 获取文件直链
-                if z_url == True:
-                    z_alist_path = {"path": path + "/" + file_name}  ## 拼接路径和文件名
-                    z_alist_post = fs_get(z_alist_path, alist_host, alist_token)  ## 获取文件下载信息
+                # 获取文件直链
+                if z_url():
+                    z_alist_path = {"path": f"{path}/{file_name}"}
+                    z_alist_post = fs_get(z_alist_path, alist_host, alist_token)  # 获取文件下载信息
                     z_data = json.loads(z_alist_post.text)
                     z_file_url = [z_data['data']['raw_url']]
                 else:
@@ -97,10 +91,9 @@ async def s(update, context):
 
                 if folder:
                     folder_tg_text = "📁文件夹："
-                    z_folder = ""
                     z_folder_f = ""
                     z_url_link = ''
-                elif z_url == True:
+                elif z_url():
                     folder_tg_text = "📄文件："
                     z_folder = "直接下载"
                     z_folder_f = "|"
@@ -126,7 +119,7 @@ async def s(update, context):
                                                     )
 
 
-## 字节数转文件大小
+# 字节数转文件大小
 __all__ = ['pybyte']
 
 
@@ -134,25 +127,21 @@ def pybyte(size, dot=2):
     size = float(size)
     # 位 比特 bit
     if 0 <= size < 1:
-        human_size = str(round(size / 0.125, dot)) + 'b'
-    # 字节 字节 Byte
+        human_size = f'{str(round(size / 0.125, dot))}b'
     elif 1 <= size < 1024:
-        human_size = str(round(size, dot)) + 'B'
-    # 千字节 千字节 Kilo Byte
+        human_size = f'{str(round(size, dot))}B'
     elif math.pow(1024, 1) <= size < math.pow(1024, 2):
-        human_size = str(round(size / math.pow(1024, 1), dot)) + 'KB'
-    # 兆字节 兆 Mega Byte
+        human_size = f'{str(round(size / math.pow(1024, 1), dot))}KB'
     elif math.pow(1024, 2) <= size < math.pow(1024, 3):
-        human_size = str(round(size / math.pow(1024, 2), dot)) + 'MB'
-    # 吉字节 吉 Giga Byte
+        human_size = f'{str(round(size / math.pow(1024, 2), dot))}MB'
     elif math.pow(1024, 3) <= size < math.pow(1024, 4):
-        human_size = str(round(size / math.pow(1024, 3), dot)) + 'GB'
-    # 太字节 太 Tera Byte
+        human_size = f'{str(round(size / math.pow(1024, 3), dot))}GB'
     elif math.pow(1024, 4) <= size < math.pow(1024, 5):
-        human_size = str(round(size / math.pow(1024, 4), dot)) + 'TB'
-    # 负数
+        human_size = f'{str(round(size / math.pow(1024, 4), dot))}TB'
     else:
-        raise ValueError('{}() takes number than or equal to 0, but less than 0 given.'.format(pybyte.__name__))
+        raise ValueError(
+            f'{pybyte.__name__}() takes number than or equal to 0, but less than 0 given.'
+        )
     return human_size
 
 
