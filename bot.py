@@ -159,8 +159,8 @@ def translate_key(list_or_dict, translation_dict):  # sourcery skip: assign-if-e
 #####################################################################################
 #####################################################################################
 def main():
-    import search
-    import storage
+    from search import search_handlers
+    from storage import storage_handlers, echo_storage
 
     application = ApplicationBuilder().token(bot_token).build()
 
@@ -171,25 +171,19 @@ def main():
 
     # 监听普通消息
     async def e(update, context):
-        await storage.echo_storage(update, context)
+        await echo_storage(update, context)
         await echo_bot(update, context)
 
     application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), e))
 
     # search
-    application.add_handler(search.zl_handler)
-    application.add_handler(search.sl_handler)
-    application.add_handler(search.s_handler)
+    application.add_handlers(search_handlers)
 
     # storage
-    application.add_handler(storage.st_handler)
-    application.add_handler(storage.st_button_callback_handler)
-    application.add_handler(storage.vs_button_callback_handler)
-    application.add_handler(storage.cs_button_callback_handler)
-    application.add_handler(storage.ds_button_callback_handler)
-    application.add_handler(storage.ns_button_callback_handler)
+    application.add_handlers(storage_handlers)
 
-    application.run_polling()  # 启动
+    # 启动
+    application.run_polling()
 
 
 if __name__ == '__main__':

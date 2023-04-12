@@ -120,8 +120,6 @@ async def s(update, context):
 
 
 # 字节数转文件大小
-__all__ = ['pybyte']
-
 
 def pybyte(size, dot=2):
     size = float(size)
@@ -145,6 +143,8 @@ def pybyte(size, dot=2):
     return human_size
 
 
-s_handler = CommandHandler('s', s)
-sl_handler = CommandHandler('sl', sl)
-zl_handler = CommandHandler('zl', zl)
+search_handlers = [
+    CommandHandler('s', s),
+    CommandHandler('sl', sl),
+    CommandHandler('zl', zl),
+]

@@ -936,12 +936,10 @@ async def storage_config(driver_name):  # sourcery skip: swap-if-expression
 
 #####################################################################################
 #####################################################################################
-
-st_handler = CommandHandler('st', st)
-
-#  监听按钮
-st_button_callback_handler = CallbackQueryHandler(st_button_callback, pattern=r'^st')  # 存储设置菜单按钮
-vs_button_callback_handler = CallbackQueryHandler(vs_button_callback, pattern=r'^vs')  # 开关存储按钮
-cs_button_callback_handler = CallbackQueryHandler(cs_button_callback, pattern=r'^cs')  # 复制存储按钮
-ds_button_callback_handler = CallbackQueryHandler(ds_button_callback, pattern=r'^ds')  # 删除存储按钮
-ns_button_callback_handler = CallbackQueryHandler(ns_button_callback, pattern=r'^ns')  # 新建存储按钮
+storage_handlers = [CommandHandler('st', st),
+                    CallbackQueryHandler(st_button_callback, pattern=r'^st'),  # 存储设置菜单按钮
+                    CallbackQueryHandler(vs_button_callback, pattern=r'^vs'),  # 开关存储按钮
+                    CallbackQueryHandler(cs_button_callback, pattern=r'^cs'),  # 复制存储按钮
+                    CallbackQueryHandler(ds_button_callback, pattern=r'^ds'),  # 删除存储按钮
+                    CallbackQueryHandler(ns_button_callback, pattern=r'^ns')  # 新建存储按钮
+                    ]
