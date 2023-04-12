@@ -1,8 +1,8 @@
 # Telegram-Alist bot
-
+**Alist项目地址：**
 [![Readme Card](https://github-readme-stats.vercel.app/api/pin/?username=alist-org&repo=alist)](https://github.com/alist-org/alist)  
 
-主要功能：
+**主要功能：**
 
 - [x] 搜索
     - [x] 文件基本信息
@@ -14,15 +14,14 @@
     - [x] 复制存储
     - [x] 新建存储
     - [x] 批量新建存储
-- [x] 备份Alist配置到tg
-
-
-**[@ybyx_bot](http://t.me/ybyx_bot)**
+- [x] Alist配置备份
 
 ### 预览图:
 
 <details>
 <summary><b>搜索</b></summary>
+
+和alist搜索方式一样  
 
 ![搜索预览图](https://i.328888.xyz/2023/03/11/soMAw.gif)
 
@@ -39,6 +38,8 @@
 
 <details>
 <summary><b>配置备份</b></summary>
+
+可以回复消息来添加备注，可以重复修改
 
 ![配置备份](https://i.328888.xyz/2023/04/04/ibJg73.gif)
 
@@ -81,6 +82,14 @@
 
 <details>
 <summary><b>新建&批量新建</b></summary>
+
+可以设置默认配置，新建存储会优先使用默认配置。所有参数都可以设置默认值
+
+比如设置了PikPak的`用户名`和`密码`，新建的时候就不需要输入了，只需要输入`挂载路径`和`分享ID`  
+
+![默认配置](https://i.328888.xyz/2023/04/11/iBDWVv.png)![默认配置](https://i.328888.xyz/2023/04/11/iBDjRQ.png)
+
+### 新建存储：
 
 ![新建&批量新建](https://i.328888.xyz/2023/03/21/TjH68.png)![新建&批量新建](https://i.328888.xyz/2023/03/21/TjkUU.gif)
 
