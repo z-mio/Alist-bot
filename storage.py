@@ -105,7 +105,7 @@ async def st_button_callback(update, context):
 
 # 开关存储 按钮回调
 @admin_yz
-async def vs_button_callback(update, context):
+async def vs_button_callback(update, _):
     # sourcery skip: merge-comparisons, merge-duplicate-blocks, remove-redundant-if
     query = update.callback_query
     bvj = query.data
@@ -120,7 +120,7 @@ async def vs_button_callback(update, context):
 
 # 复制存储 按钮回调
 @admin_yz
-async def cs_button_callback(update, context):
+async def cs_button_callback(update, _):
     query = update.callback_query
     bvj = query.data
     bvj = int(bvj.strip("cs"))
@@ -129,7 +129,7 @@ async def cs_button_callback(update, context):
 
 # 删除存储 按钮回调
 @admin_yz
-async def ds_button_callback(update, context):
+async def ds_button_callback(update, _):
     query = update.callback_query
     bvj = query.data
     bvj = int(bvj.strip("ds"))

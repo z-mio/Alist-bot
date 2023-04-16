@@ -37,6 +37,10 @@ def z_url():
     return config['search']['z_url']
 
 
+def backup_time():
+    return config['bot']['backup_time']
+
+
 # storage_cfg
 
 def storage_cfg():

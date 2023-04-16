@@ -1,3 +1,4 @@
 python_telegram_bot==20.2
 requests==2.28.2
 PyYAML~=6.0
+APScheduler~=3.10.1
