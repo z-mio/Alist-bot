@@ -1,3 +1,5 @@
+bot:
+  backup_time: '0'
 user:
   admin: #管理员用户id,可以添加多个
     - 123456789
