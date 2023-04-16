@@ -8,10 +8,12 @@ import os
 import requests
 import telegram
 import yaml
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from telegram import Update, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters, MessageHandler
 
-from config.config import admin, bot_token, alist_host, alist_token
+from config.config import config, admin, bot_token, alist_host, alist_token, backup_time, write_config
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -26,7 +28,9 @@ bot_menu = [BotCommand(command="start", description="开始"),
             BotCommand(command="st", description="存储管理"),
             BotCommand(command="cf", description="查看当前配置"),
             BotCommand(command="bc", description="备份Alist配置"),
+            BotCommand(command="sbt", description="设置定时备份"),
             ]
+scheduler = AsyncIOScheduler()
 
 
 # 管理员验证
@@ -67,10 +71,10 @@ async def menu(update, context):
 @admin_yz
 async def cf(update, context):
     with open("config/config.yaml", 'r', encoding='utf-8') as f:
-        config = yaml.safe_load(f)
+        cf_config = yaml.safe_load(f)
     with open("config/cn_dict.json", 'r', encoding='utf-8') as ff:
         cn_dict = json.load(ff)
-    b = translate_key(translate_key(config, cn_dict["config_cn"]), cn_dict["common"])
+    b = translate_key(translate_key(cf_config, cn_dict["config_cn"]), cn_dict["common"])
     text = json.dumps(b, indent=4, ensure_ascii=False)
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text=f'<code>{text}</code>',
@@ -95,9 +99,8 @@ async def echo_bot(update, context):
             context.chat_data.pop("bc_message_id", None)
 
 
-# 配置备份
-@admin_yz
-async def bc(update, context):
+# 备份alist配置
+def backup_config():
     bc_list = ['setting', 'user', 'storage', 'meta']
     bc_dic = {'settings': '', 'users': 'users', 'storages': '', 'metas': ''}
     for i in range(len(bc_list)):
@@ -111,13 +114,65 @@ async def bc(update, context):
     current_time = now.strftime("%Y_%m_%d_%H_%M_%S")  # 获取当前时间
     bc_file_name = f'alist_bot_backup_{current_time}.json'
     with open(bc_file_name, 'w', encoding='utf-8') as b:
-        b.write(str(data))
+        b.write(data)
+    return bc_file_name
 
+
+# 发送备份文件
+@admin_yz
+async def send_backup_file(update, context):
+    bc_file_name = backup_config()
     context.chat_data["bc_message_id"] = await context.bot.send_document(chat_id=update.effective_chat.id,
                                                                          document=bc_file_name,
                                                                          caption='#Alist配置备份')
     context.chat_data["bc"] = True
     os.remove(bc_file_name)
+
+
+# 设置备份时间&开启定时备份
+async def set_backup_time(update, context):
+    time = update.message.text.strip("/sbt ")
+    if len(time.split()) == 5:
+        config['bot']['backup_time'] = time
+        write_config('config/config.yaml', config)
+        if not scheduler.get_jobs():
+            scheduler.add_job(send_backup_file, trigger=CronTrigger.from_crontab(backup_time()), args=(update, context),
+                              id='send_backup_messages_regularly_id')
+            scheduler.start()
+        else:
+            scheduler.reschedule_job('send_backup_messages_regularly_id',
+                                     trigger=CronTrigger.from_crontab(backup_time()),
+                                     args=(update, context))
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=f'设置成功：{backup_time()}\n已开启定时备份')
+
+    elif time == '0':
+        config['bot']['backup_time'] = time
+        write_config('config/config.yaml', config)
+        if scheduler.get_jobs():
+            scheduler.pause_job('send_backup_messages_regularly_id')
+        await context.bot.send_message(chat_id=update.effective_chat.id, text='已关闭定时备份')
+    elif not time:
+        text = '''格式：/sbt + 5位cron表达式，0为关闭
+
+例：
+<code>/sbt 0</code> 关闭定时备份
+<code>/sbt 0 8 * * *</code> 每天上午8点运行
+<code>/sbt 30 20 */3 * *</code> 每3天晚上8点30运行
+
+ 5位cron表达式格式说明
+  ——分钟（0 - 59）
+ |  ——小时（0 - 23）
+ | |  ——日（1 - 31）
+ | | |  ——月（1 - 12）
+ | | | |  ——星期（0 - 7，星期日=0或7）
+ | | | | |
+ * * * * *
+'''
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=text,
+                                       parse_mode=telegram.constants.ParseMode.HTML)
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text='格式错误')
 
 
 #####################################################################################
@@ -164,10 +219,16 @@ def main():
 
     application = ApplicationBuilder().token(bot_token).build()
 
-    application.add_handler(CommandHandler('start', start))
-    application.add_handler(CommandHandler('bc', bc))
-    application.add_handler(CommandHandler('cf', cf))
-    application.add_handler(CommandHandler('menu', menu))
+    bot_handlers = [
+        CommandHandler('start', start),
+        CommandHandler('bc', send_backup_file),
+        CommandHandler('cf', cf),
+        CommandHandler('menu', menu),
+        CommandHandler('sbt', set_backup_time)
+    ]
+
+    # bot
+    application.add_handlers(bot_handlers)
 
     # 监听普通消息
     async def e(update, context):
