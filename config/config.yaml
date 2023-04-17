@@ -1,6 +1,6 @@
 bot:
   backup_time: '0'
-  proxy_url: 'http://127.0.0.1:7890'
+  proxy_url: #不填为不使用代理，支持http/https代理，例：http://127.0.0.1:7890
 user:
   admin: #管理员用户id,可以添加多个
     - 123456789
