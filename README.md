@@ -14,7 +14,9 @@
     - [x] 复制存储
     - [x] 新建存储
     - [x] 批量新建存储
-- [x] Alist配置备份
+- [x] Alist配置备份&定时备份
+- [ ] tg文件转存
+- [ ] tg频道订阅
 
 ### 预览图:
 
@@ -115,7 +117,7 @@ git clone https://github.com/z-mio/Alist-bot.git && cd Alist-bot && pip3 install
 
 ``` 
 user:
-  admin: #管理员用户id,可以添加多个
+  admin: #管理员用户id,可以添加多个，可通过@get_id_bot获取id
     - 123456789
     - 456789456
   alist_host: "http://127.0.0.1:5244" #alist ip:port
@@ -182,6 +184,7 @@ EOF
 /zl+1/0 开启/关闭发送直链
 /st 存储管理
 /bc 备份Alist配置
+/sbt 设置定时备份
 ```
 
 
