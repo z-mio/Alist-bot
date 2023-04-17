@@ -5,6 +5,7 @@ import json
 import logging
 import os
 
+import croniter
 import requests
 import telegram
 import yaml
@@ -135,16 +136,20 @@ async def set_backup_time(update, context):
     if len(time.split()) == 5:
         config['bot']['backup_time'] = time
         write_config('config/config.yaml', config)
+        cron = croniter.croniter(backup_time(), datetime.datetime.now())
+        next_run_time = cron.get_next(datetime.datetime)  # 下一次备份时间
         if not scheduler.get_jobs():
             scheduler.add_job(send_backup_file, trigger=CronTrigger.from_crontab(backup_time()), args=(update, context),
                               id='send_backup_messages_regularly_id')
+            text = f'已开启定时备份！\n下一次备份时间：{next_run_time}'
             scheduler.start()
         else:
             scheduler.reschedule_job('send_backup_messages_regularly_id',
                                      trigger=CronTrigger.from_crontab(backup_time()),
                                      args=(update, context))
+            text = f'修改成功！\n下一次备份时间：{next_run_time}'
         await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text=f'设置成功：{backup_time()}\n已开启定时备份')
+                                       text=text)
 
     elif time == '0':
         config['bot']['backup_time'] = time
@@ -216,10 +221,15 @@ def translate_key(list_or_dict, translation_dict):  # sourcery skip: assign-if-e
 def main():
     from search import search_handlers
     from storage import storage_handlers, echo_storage
-
-    application = ApplicationBuilder().token(bot_token).proxy_url(proxy_url).get_updates_proxy_url(
-        proxy_url).build() if proxy_url else ApplicationBuilder().token(bot_token).build()
-
+    application = (
+        ApplicationBuilder()
+        .token(bot_token)
+        .proxy_url(proxy_url)
+        .get_updates_proxy_url(proxy_url)
+        .build()
+        if proxy_url
+        else ApplicationBuilder().token(bot_token).build()
+    )
     bot_handlers = [
         CommandHandler('start', start),
         CommandHandler('bc', send_backup_file),
