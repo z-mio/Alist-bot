@@ -217,7 +217,8 @@ def main():
     from search import search_handlers
     from storage import storage_handlers, echo_storage
 
-    application = ApplicationBuilder().token(bot_token).proxy_url(proxy_url).get_updates_proxy_url(proxy_url).build()
+    application = ApplicationBuilder().token(bot_token).proxy_url(proxy_url).get_updates_proxy_url(
+        proxy_url).build() if proxy_url else ApplicationBuilder().token(bot_token).build()
 
     bot_handlers = [
         CommandHandler('start', start),
