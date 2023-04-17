@@ -13,7 +13,7 @@ from apscheduler.triggers.cron import CronTrigger
 from telegram import Update, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters, MessageHandler
 
-from config.config import config, admin, bot_token, alist_host, alist_token, backup_time, write_config
+from config.config import config, admin, bot_token, alist_host, alist_token, backup_time, write_config, proxy_url
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -217,7 +217,7 @@ def main():
     from search import search_handlers
     from storage import storage_handlers, echo_storage
 
-    application = ApplicationBuilder().token(bot_token).build()
+    application = ApplicationBuilder().token(bot_token).proxy_url(proxy_url).get_updates_proxy_url(proxy_url).build()
 
     bot_handlers = [
         CommandHandler('start', start),

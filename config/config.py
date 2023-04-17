@@ -24,7 +24,7 @@ bot_token = config['user']['bot_token']
 
 alist_web = config['search']['alist_web']
 
-
+proxy_url = config['bot']['proxy_url']
 def admin():
     return config['user']['admin']
 
