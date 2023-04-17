@@ -116,6 +116,9 @@ git clone https://github.com/z-mio/Alist-bot.git && cd Alist-bot && pip3 install
 **3.修改 config.yaml 里的配置信息**
 
 ``` 
+bot:
+  proxy_url: 
+  #不填则不使用代理，支持http/https代理，例：http://127.0.0.1:7890
 user:
   admin: #管理员用户id,可以添加多个，可通过@get_id_bot获取id
     - 123456789
