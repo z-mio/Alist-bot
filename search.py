@@ -42,7 +42,7 @@ async def zl(update, context):
 
 
 # 搜索
-async def s(update, context):
+async def s(update, context):  # sourcery skip: low-code-quality
     text_caps = update.message.text
     s_str = text_caps.strip("/s @")
 
@@ -63,7 +63,7 @@ async def s(update, context):
             parent_list = []  # 文件/文件夹路径
             size_list = []  # 文件大小
             is_dir_list = []  # 是否是文件夹
-            jishu = 0
+            count = 0
             tg_text = ""
 
             for item in alist_post_json['data']['content']:
@@ -73,10 +73,10 @@ async def s(update, context):
                 size_list.append(item['size'])
                 is_dir_list.append(item['is_dir'])
 
-                file_name = name_list[jishu]
-                path = parent_list[jishu]
-                file_size = size_list[jishu]
-                folder = is_dir_list[jishu]
+                file_name = name_list[count]
+                path = parent_list[count]
+                file_size = size_list[count]
+                folder = is_dir_list[count]
 
                 file_url = alist_web + path + "/" + file_name
 
@@ -104,13 +104,13 @@ async def s(update, context):
                     z_url_link = ''
 
                 #########################
-                tg_textt = f'''{jishu + 1}.{folder_tg_text}{file_name}
+                text = f'''{count + 1}.{folder_tg_text}{file_name}
 <a href="{file_url}">🌐打开网站</a>|{z_url_link}{z_folder_f}大小: {pybyte(file_size)}
 
 '''
                 #########################
-                tg_text += tg_textt
-                jishu += 1
+                tg_text += text
+                count += 1
                 await context.bot.edit_message_text(chat_id=update.effective_chat.id,
                                                     message_id=search1.message_id,
                                                     text=tg_text,

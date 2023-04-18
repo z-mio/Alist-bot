@@ -430,9 +430,7 @@ async def cs_callback(bvj, query):
         cs_mount_path_text = re.sub('.balance.*', '', cs_mount_path)
         cs_storage[0]['mount_path'] = f'{cs_mount_path_text}.balance{current_time}'
     cs_storage[0]['order'] = cs_order + 1  # 基于当前配置的排序加1
-    cs_storage[0]['remark'] = (
-            f'{mount_path[bvj]} -> ' + cs_storage[0]['mount_path']
-    )
+    cs_storage[0]['remark'] = f"{mount_path[bvj]} -> {cs_storage[0]['mount_path']}\n{cs_storage[0]['remark']}"
 
     body = cs_storage[0]
     storage_create(body, alist_host, alist_token)  # 新建存储
@@ -744,7 +742,13 @@ async def st_storage_copy_cfg(bvj, query):
     get_a = translate_key(translate_key(get_a, text_dict['common']), text_dict['additional'])
     get_b = translate_key(translate_key(get_b, text_dict['common']), text_dict['additional'])
     get_a.update(get_b)
-    get_a.pop('额外信息')
+    delete = ['额外信息', '状态', '修改时间', '禁用', 'id', '驱动']
+    for i in delete:
+        try:
+            get_a.pop(i)
+        except KeyError:
+            ...
+    get_a['备注'] = get_a['备注'].replace('\n', ' ')
     text_list = [f"{i} = {get_a[i]}\n" for i in get_a.keys()]
     text = "".join(text_list)
     await query.edit_message_text(text=f'<code>{text}</code>',

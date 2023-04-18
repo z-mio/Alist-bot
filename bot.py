@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*-
-
 import datetime
 import json
 import logging
@@ -14,10 +13,11 @@ from apscheduler.triggers.cron import CronTrigger
 from telegram import Update, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters, MessageHandler
 
+from alist_api import storage_list
 from config.config import config, admin, bot_token, alist_host, alist_token, backup_time, write_config, proxy_url
 
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - %(name)s - %(levelname)s: %(message)s',
     level=logging.INFO
 )
 
@@ -57,6 +57,7 @@ def admin_yz(func):  # sourcery skip: remove-unnecessary-else
 
 # 开始
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(context.chat_data)
     await context.bot.send_message(chat_id=update.effective_chat.id, text="发送 /s+文件名 进行搜索")
 
 
@@ -83,6 +84,7 @@ async def cf(update, context):
 
 
 # 监听普通消息
+@admin_yz
 async def echo_bot(update, context):
     if "bc" in context.chat_data and context.chat_data["bc"]:
         message = update.message
@@ -131,6 +133,7 @@ async def send_backup_file(update, context):
 
 
 # 设置备份时间&开启定时备份
+@admin_yz
 async def set_backup_time(update, context):
     time = update.message.text.strip("/sbt ")
     if len(time.split()) == 5:
@@ -173,6 +176,8 @@ async def set_backup_time(update, context):
  | | | |  ——星期（0 - 7，星期日=0或7）
  | | | | |
  * * * * *
+ 
+注：bot重启后需要重新设置
 '''
         await context.bot.send_message(chat_id=update.effective_chat.id, text=text,
                                        parse_mode=telegram.constants.ParseMode.HTML)
@@ -218,6 +223,23 @@ def translate_key(list_or_dict, translation_dict):  # sourcery skip: assign-if-e
 
 #####################################################################################
 #####################################################################################
+
+# bot启动前验证
+def examine():
+    try:
+        a = storage_list(alist_host, alist_token)
+        code = json.loads(a.text)
+    except json.decoder.JSONDecodeError:
+        logging.error('连接Alist失败，请检查配置alist_host是否填写正确')
+        exit()
+    else:
+        if code['code'] == 200:
+            ...
+        elif code['code'] == 401 and code['message'] == "that's not even a token":
+            logging.error('Alist token错误')
+            exit()
+
+
 def main():
     from search import search_handlers
     from storage import storage_handlers, echo_storage
@@ -230,6 +252,7 @@ def main():
         if proxy_url
         else ApplicationBuilder().token(bot_token).build()
     )
+
     bot_handlers = [
         CommandHandler('start', start),
         CommandHandler('bc', send_backup_file),
@@ -255,8 +278,14 @@ def main():
     application.add_handlers(storage_handlers)
 
     # 启动
-    application.run_polling()
+    try:
+        application.run_polling()
+    except telegram.error.InvalidToken:
+        logging.error('token被服务器拒绝，请检查配置bot token')
+    except telegram.error.NetworkError:
+        logging.error('所有连接尝试都失败，请检查配置proxy_url')
 
 
 if __name__ == '__main__':
+    examine()
     main()
