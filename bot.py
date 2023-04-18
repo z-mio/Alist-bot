@@ -57,14 +57,13 @@ def admin_yz(func):  # sourcery skip: remove-unnecessary-else
 
 # 开始
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(context.chat_data)
     await context.bot.send_message(chat_id=update.effective_chat.id, text="发送 /s+文件名 进行搜索")
 
 
 # 设置菜单
 @admin_yz
 async def menu(update, context):
-    await telegram.Bot(token=bot_token).set_my_commands(bot_menu)  # 全部可见
+    await context.bot.set_my_commands(bot_menu)  # 全部可见
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text="菜单设置成功，请退出聊天界面重新进入来刷新菜单")
 
@@ -287,5 +286,5 @@ def main():
 
 
 if __name__ == '__main__':
-    examine()
+    # examine()
     main()
