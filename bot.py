@@ -131,6 +131,7 @@ async def send_backup_file(update, context):
 
 
 # 设置备份时间&开启定时备份
+@admin_yz
 async def set_backup_time(update, context):
     time = update.message.text.strip("/sbt ")
     if len(time.split()) == 5:
