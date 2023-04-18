@@ -83,7 +83,7 @@ async def cf(update, context):
 
 
 # 监听普通消息
-@admin_yz
+
 async def echo_bot(update, context):
     if "bc" in context.chat_data and context.chat_data["bc"]:
         message = update.message
