@@ -11,7 +11,7 @@ def search(file_name, per_page, alist_host, alist_token):
             "page": 1,
             "per_page": per_page
             }
-    return requests.post(url, json=body, headers=header)
+    return requests.post(url, json=body, headers=header, timeout=10)
 
 
 # 获取下载信息
@@ -20,53 +20,53 @@ def fs_get(path, alist_host, alist_token):
     header = {"Authorization": alist_token,
               'Cache-Control': 'no-cache'
               }
-    return requests.post(url, json=path, headers=header)
+    return requests.post(url, json=path, headers=header, timeout=10)
 
 
 # 查询指定存储信息
 def storage_get(storage_id, alist_host, alist_token):
     url = f'{alist_host}/api/admin/storage/get?id={str(storage_id)}'
     header = {"Authorization": alist_token}
-    return requests.get(url, headers=header)
+    return requests.get(url, headers=header, timeout=10)
 
 
 # 新建存储
 def storage_create(body, alist_host, alist_token):
     url = f'{alist_host}/api/admin/storage/create'
     header = {'Authorization': alist_token}
-    return requests.post(url, json=body, headers=header)
+    return requests.post(url, json=body, headers=header, timeout=10)
 
 
 # 更新存储
 def storage_update(body, alist_host, alist_token):
     url = f'{alist_host}/api/admin/storage/update'
     header = {"Authorization": alist_token}
-    return requests.post(url, json=body, headers=header)
+    return requests.post(url, json=body, headers=header, timeout=10)
 
 
 # 获取存储列表
 def storage_list(alist_host, alist_token):
     url = f'{alist_host}/api/admin/storage/list'
     header = {"Authorization": alist_token, }
-    return requests.get(url, headers=header)
+    return requests.get(url, headers=header, timeout=10)
 
 
 # 删除指定存储
 def storage_delete(storage_id, alist_host, alist_token):
     url = f'{alist_host}/api/admin/storage/delete?id={str(storage_id)}'
     header = {"Authorization": alist_token}
-    return requests.post(url, headers=header)
+    return requests.post(url, headers=header, timeout=10)
 
 
 # 开启存储
 def storage_enable(storage_id, alist_host, alist_token):
     url = f'{alist_host}/api/admin/storage/enable?id={str(storage_id)}'
     header = {"Authorization": alist_token}
-    return requests.post(url, headers=header)
+    return requests.post(url, headers=header, timeout=10)
 
 
 # 关闭存储
 def storage_disable(storage_id, alist_host, alist_token):
     url = f'{alist_host}/api/admin/storage/disable?id={str(storage_id)}'
     header = {"Authorization": alist_token}
-    return requests.post(url, headers=header)
+    return requests.post(url, headers=header, timeout=10)

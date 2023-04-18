@@ -223,13 +223,16 @@ def translate_key(list_or_dict, translation_dict):  # sourcery skip: assign-if-e
 #####################################################################################
 #####################################################################################
 
-# bot启动前验证
+# bot启动时验证
 def examine():
     try:
         a = storage_list(alist_host, alist_token)
         code = json.loads(a.text)
     except json.decoder.JSONDecodeError:
         logging.error('连接Alist失败，请检查配置alist_host是否填写正确')
+        exit()
+    except requests.exceptions.ReadTimeout:
+        logging.error('连接Alist超时，请检查网站状态')
         exit()
     else:
         if code['code'] == 200:
@@ -286,5 +289,5 @@ def main():
 
 
 if __name__ == '__main__':
-    # examine()
+    examine()
     main()
