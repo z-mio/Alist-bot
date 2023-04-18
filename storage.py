@@ -1,8 +1,10 @@
 # -*- coding: UTF-8 -*-
 import datetime
 import json
+import logging
 import re
 
+import requests
 import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler, CommandHandler
@@ -178,9 +180,6 @@ async def ns_button_callback(update, context):
 # 监听指令
 #####################################################################################
 
-# context.chat_data = {}  # 保存 添加单个存储 的用户和bot消息id
-
-
 # 检测普通消息
 async def echo_storage(update, context):
     if "ns_a" in context.chat_data and context.chat_data["ns_a"]:
@@ -204,28 +203,34 @@ async def echo_storage(update, context):
 @admin_yz
 async def st(update, context):
     # sourcery skip: remove-unnecessary-cast, simplify-constant-sum, sum-comprehension
-    sl = storage_list(alist_host, alist_token)
-    sl_json = json.loads(sl.text)
-    zcc = len(sl_json['data']['content'])
-    content_list = sl_json["data"]["content"]
-    jysl = 0
-    for item in content_list:
-        if item["disabled"]:
-            jysl += 1
-    qysl = zcc - jysl
-    text = f'存储数量：{zcc}\n启用：{qysl}\n禁用：{jysl}'
-    context.chat_data['storage_menu_button'] = await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=text,
-        reply_markup=InlineKeyboardMarkup(
-            st_button),
-        parse_mode=telegram.constants.ParseMode.HTML
-    )
-    global storage_menu_button
-    storage_menu_button = context.chat_data.get('storage_menu_button')
+    try:
+        sl = storage_list(alist_host, alist_token)
+    except requests.exceptions.ReadTimeout:
+        logging.error('连接Alist超时，请检查网站状态')
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="连接Alist超时，请检查网站状态")
+    else:
+        sl_json = json.loads(sl.text)
+        zcc = len(sl_json['data']['content'])
+        content_list = sl_json["data"]["content"]
+        jysl = 0
+        for item in content_list:
+            if item["disabled"]:
+                jysl += 1
+        qysl = zcc - jysl
+        text = f'存储数量：{zcc}\n启用：{qysl}\n禁用：{jysl}'
+        context.chat_data['storage_menu_button'] = await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=text,
+            reply_markup=InlineKeyboardMarkup(
+                st_button),
+            parse_mode=telegram.constants.ParseMode.HTML
+        )
+        global storage_menu_button
+        storage_menu_button = context.chat_data.get('storage_menu_button')
 
 
 # 返回存储管理菜单
+@admin_yz
 async def st_return(update, context):
     # sourcery skip: remove-unnecessary-cast, simplify-constant-sum, sum-comprehension
     sl = storage_list(alist_host, alist_token)
@@ -245,6 +250,7 @@ async def st_return(update, context):
 
 
 # 关闭存储管理菜单
+@admin_yz
 async def st_close(update, context):
     await context.bot.edit_message_text(chat_id=update.effective_chat.id,
                                         message_id=storage_menu_button.message_id,
