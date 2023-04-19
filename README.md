@@ -19,7 +19,11 @@
 - [ ] tg频道订阅
 - [ ] 图床
 
-### 预览图:
+### 功能预览&说明:
+
+<details>
+<summary style="font-size: 20px;"><b style="color:rgba(123,144,210);">点击展开</b></summary>
+
 
 <details>
 <summary><b>搜索</b></summary>
@@ -84,7 +88,20 @@
 
 
 <details>
-<summary><b>新建&批量新建</b></summary>
+<summary><b>新建&批量新建&默认配置</b></summary>
+
+<details>
+<summary><b style="color:rgba(255, 182, 193);"> - 新建&批量新建</b></summary>
+
+
+![新建&批量新建](https://i.328888.xyz/2023/03/21/TjH68.png)![新建&批量新建](https://i.328888.xyz/2023/03/21/TjkUU.gif)
+
+
+</details>
+
+
+<details>
+<summary><b style="color:rgba(255, 182, 193);"> - 默认配置</b></summary>
 
 可以设置默认配置，新建存储会优先使用默认配置。所有参数都可以设置默认值
 
@@ -92,13 +109,11 @@
 
 ![默认配置](https://i.328888.xyz/2023/04/11/iBDWVv.png)![默认配置](https://i.328888.xyz/2023/04/11/iBDjRQ.png)
 
-### 新建存储：
-
-![新建&批量新建](https://i.328888.xyz/2023/03/21/TjH68.png)![新建&批量新建](https://i.328888.xyz/2023/03/21/TjkUU.gif)
+</details>
 
 </details>
 
-
+</details>
 
 ## 安装
 
