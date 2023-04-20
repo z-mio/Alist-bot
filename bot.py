@@ -4,7 +4,7 @@ import datetime
 import json
 import logging
 import os
-
+from pyrogram import Client
 import croniter
 import requests
 import telegram
