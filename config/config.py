@@ -26,9 +26,7 @@ alist_web = config['search']['alist_web'].removesuffix('/')
 
 proxy_url = config['bot']['proxy_url']
 
-
-def admin():
-    return config['user']['admin']
+admin = config['user']['admin']
 
 
 def per_page():

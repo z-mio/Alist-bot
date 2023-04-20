@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+
 import datetime
 import json
 import logging
@@ -21,16 +22,6 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# bot菜单
-bot_menu = [BotCommand(command="start", description="开始"),
-            BotCommand(command="s", description="搜索文件"),
-            BotCommand(command="sl", description="设置搜索结果数量"),
-            BotCommand(command="zl", description="开启/关闭 直链"),
-            BotCommand(command="st", description="存储管理"),
-            BotCommand(command="cf", description="查看当前配置"),
-            BotCommand(command="bc", description="备份Alist配置"),
-            BotCommand(command="sbt", description="设置定时备份"),
-            ]
 scheduler = AsyncIOScheduler()
 
 
@@ -44,10 +35,10 @@ def admin_yz(func):  # sourcery skip: remove-unnecessary-else
         except AttributeError:
             query_user_id = 2023
 
-        if user_id in admin():
+        if user_id == admin:
             return await func(update, context, *args, **kwargs)
         else:
-            if query_user_id in admin():
+            if query_user_id == admin:
                 return await func(update, context, *args, **kwargs)
             else:
                 await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
@@ -63,7 +54,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # 设置菜单
 @admin_yz
 async def menu(update, context):
-    await context.bot.set_my_commands(bot_menu)  # 全部可见
+    # 管理员私聊可见
+    a_bot_menu = [BotCommand(command="start", description="开始"),
+                  BotCommand(command="s", description="搜索文件"),
+                  BotCommand(command="sl", description="设置搜索结果数量"),
+                  BotCommand(command="zl", description="开启/关闭 直链"),
+                  BotCommand(command="st", description="存储管理"),
+                  BotCommand(command="cf", description="查看当前配置"),
+                  BotCommand(command="bc", description="备份Alist配置"),
+                  BotCommand(command="sbt", description="设置定时备份"),
+                  ]
+    # 全部可见
+    b_bot_menu = [BotCommand(command="start", description="开始"),
+                  BotCommand(command="s", description="搜索文件"),
+                  ]
+
+    await context.bot.delete_my_commands()  # 删除菜单
+    await context.bot.set_my_commands(a_bot_menu, scope=telegram.BotCommandScopeChat(chat_id=admin))  # 管理员私聊可见
+    await context.bot.set_my_commands(b_bot_menu)  # 全部可见
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text="菜单设置成功，请退出聊天界面重新进入来刷新菜单")
 
@@ -102,6 +110,7 @@ async def echo_bot(update, context):
 
 
 # 备份alist配置
+
 def backup_config():
     bc_list = ['setting', 'user', 'storage', 'meta']
     bc_dic = {'settings': '', 'users': 'users', 'storages': '', 'metas': ''}
@@ -131,6 +140,15 @@ async def send_backup_file(update, context):
     os.remove(bc_file_name)
 
 
+# 定时任务——发送备份文件
+async def recovery_send_backup_file(_, context):
+    bc_file_name = backup_config()
+    await context.bot.send_document(
+        chat_id=admin, document=bc_file_name, caption='#Alist配置定时备份'
+    )
+    os.remove(bc_file_name)
+
+
 # 设置备份时间&开启定时备份
 @admin_yz
 async def set_backup_time(update, context):
@@ -138,17 +156,15 @@ async def set_backup_time(update, context):
     if len(time.split()) == 5:
         config['bot']['backup_time'] = time
         write_config('config/config.yaml', config)
+
         cron = croniter.croniter(backup_time(), datetime.datetime.now())
         next_run_time = cron.get_next(datetime.datetime)  # 下一次备份时间
-        if not scheduler.get_jobs():
-            scheduler.add_job(send_backup_file, trigger=CronTrigger.from_crontab(backup_time()), args=(update, context),
-                              id='send_backup_messages_regularly_id')
+
+        if not scheduler.get_jobs():  # 新建
+            RegularBackup().new_scheduled_backup_task(context)
             text = f'已开启定时备份！\n下一次备份时间：{next_run_time}'
-            scheduler.start()
-        else:
-            scheduler.reschedule_job('send_backup_messages_regularly_id',
-                                     trigger=CronTrigger.from_crontab(backup_time()),
-                                     args=(update, context))
+        else:  # 修改
+            RegularBackup().modify_scheduled_backup_task()
             text = f'修改成功！\n下一次备份时间：{next_run_time}'
         await context.bot.send_message(chat_id=update.effective_chat.id,
                                        text=text)
@@ -157,7 +173,7 @@ async def set_backup_time(update, context):
         config['bot']['backup_time'] = time
         write_config('config/config.yaml', config)
         if scheduler.get_jobs():
-            scheduler.pause_job('send_backup_messages_regularly_id')
+            RegularBackup().disable_scheduled_backup_task()
         await context.bot.send_message(chat_id=update.effective_chat.id, text='已关闭定时备份')
     elif not time:
         text = '''格式：/sbt + 5位cron表达式，0为关闭
@@ -182,6 +198,29 @@ async def set_backup_time(update, context):
                                        parse_mode=telegram.constants.ParseMode.HTML)
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text='格式错误')
+
+
+# 定时备份
+class RegularBackup:
+
+    # 新建定时备份任务
+    @staticmethod
+    def new_scheduled_backup_task(context):
+        scheduler.add_job(recovery_send_backup_file, trigger=CronTrigger.from_crontab(backup_time()),
+                          args=(admin, context),
+                          id='send_backup_messages_regularly_id')
+        scheduler.start()
+
+    # 修改定时备份任务
+    @staticmethod
+    def modify_scheduled_backup_task():
+        scheduler.reschedule_job('send_backup_messages_regularly_id',
+                                 trigger=CronTrigger.from_crontab(backup_time()))
+
+    # 暂停定时备份任务
+    @staticmethod
+    def disable_scheduled_backup_task():
+        scheduler.pause_job('send_backup_messages_regularly_id')
 
 
 #####################################################################################
@@ -223,6 +262,18 @@ def translate_key(list_or_dict, translation_dict):  # sourcery skip: assign-if-e
 #####################################################################################
 #####################################################################################
 
+# bot重启后要恢复的任务
+async def recovery_task(context):
+    # Alist配置定时备份
+    async def alist_config_timed_backup():
+        if backup_time() != '0':
+            logging.info('恢复定时任务')
+            RegularBackup().new_scheduled_backup_task(context)
+
+    ###
+    await alist_config_timed_backup()
+
+
 # bot启动时验证
 def examine():
     try:
@@ -255,12 +306,16 @@ def main():
         else ApplicationBuilder().token(bot_token).build()
     )
 
+    job_queue = application.job_queue
+    job_queue.run_once(recovery_task, 5)  # 定时任务，bot启动时等待5秒运行，只运行一次
+
     bot_handlers = [
         CommandHandler('start', start),
         CommandHandler('bc', send_backup_file),
         CommandHandler('cf', cf),
         CommandHandler('menu', menu),
-        CommandHandler('sbt', set_backup_time)
+        CommandHandler('sbt', set_backup_time),
+
     ]
 
     # bot

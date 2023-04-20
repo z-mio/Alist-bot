@@ -118,7 +118,9 @@
     "admin": "管理员",
     "alist_host": "alist 域名:端口",
     "alist_token": "alist令牌",
-    "bot_token": "bot令牌"
+    "bot_token": "bot令牌",
+    "backup_time": "备份时间",
+    "proxy_url": "代理地址"
   },
   "driver": {
     "115 Cloud": "115云盘",
