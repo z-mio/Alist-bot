@@ -16,13 +16,13 @@ def write_config(path, modified_config):
 
 config = get_config("config/config.yaml")
 
-alist_host = config['user']['alist_host']
+alist_host = config['user']['alist_host'].removesuffix('/')
 
 alist_token = config['user']['alist_token']
 
 bot_token = config['user']['bot_token']
 
-alist_web = config['search']['alist_web']
+alist_web = config['search']['alist_web'].removesuffix('/')
 
 proxy_url = config['bot']['proxy_url']
 
