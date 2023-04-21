@@ -117,6 +117,7 @@
 
 ## 安装
 
+
 **1.安装 python3-pip**
 
 ```
@@ -132,18 +133,18 @@ git clone https://github.com/z-mio/Alist-bot.git && cd Alist-bot && pip3 install
 **3.修改 config.yaml 里的配置信息**
 
 ``` 
-bot:
-  proxy_url: 
-  #不填则不使用代理，支持http/https代理，例：http://127.0.0.1:7890
 user:
-  admin: #管理员用户id,可以添加多个，可通过@get_id_bot获取id
-    - 123456789
-    - 456789456
-  alist_host: "http://127.0.0.1:5244" #alist ip:port
-  alsit_token: "" #alist token
-  bot_token: ""  # bot的api token，从 @BotFather 获取
-search:
-  alist_web: "https://" #你的alist域名
+  admin: 123456789 # 管理员用户id,可以添加多个，可通过@get_id_bot获取id
+  alist_host: http://127.0.0.1:5244 # alist ip:port或alist域名，一般填域名即可
+  alist_web: "https://" # 你的alist域名
+  alist_token: "" # alist token
+  bot_token: "" # bot的api token，从 @BotFather 获取
+  api_id: "" # api_id、api_hash在 https://my.telegram.org/apps 获取
+  api_hash: ""
+proxy:
+  scheme: http # 支持“socks4”、“socks5”和“http”，不填则不使用代理
+  hostname: 127.0.0.1
+  port: 7890
 ```
 
 **4.启动bot**
