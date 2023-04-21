@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 import json
 import math
-
+import urllib.parse
 from pyrogram import filters
 from pyrogram.handlers import MessageHandler
 
@@ -103,7 +103,8 @@ async def s(client, message):  # sourcery skip: low-code-quality
                     z_folder_f = ""
                     z_url_link = ''
 
-                #########################
+                ########################
+                file_url = urllib.parse.quote(file_url, safe=':/')
                 text = f'''{count + 1}.{folder_tg_text}{file_name}
 <a href="{file_url}">🌐打开网站</a>|{z_url_link}{z_folder_f}大小: {pybyte(file_size)}
 
