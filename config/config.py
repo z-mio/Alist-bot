@@ -1,6 +1,9 @@
 # -*- coding: UTF-8 -*-
 import yaml
 
+# 存储和检索与特定聊天相关联的数据
+chat_data = {}
+
 
 def get_config(path):
     with open(path, 'r', encoding='utf-8') as f:
@@ -12,36 +15,36 @@ def write_config(path, modified_config):
         yaml.dump(modified_config, f)
 
 
-# config
-
 config = get_config("config/config.yaml")
 
-alist_host = config['user']['alist_host'].removesuffix('/')
 
-alist_token = config['user']['alist_token']
-
-bot_token = config['user']['bot_token']
-
-alist_web = config['search']['alist_web'].removesuffix('/')
-
-proxy_url = config['bot']['proxy_url']
-
-admin = config['user']['admin']
-
-
-def per_page():
-    return config['search']['per_page']
-
-
-def z_url():
-    return config['search']['z_url']
-
-
+# bot
 def backup_time():
     return config['bot']['backup_time']
 
 
-# storage_cfg
+def per_page():
+    return config['bot']['search']['per_page']
 
+
+def z_url():
+    return config['bot']['search']['z_url']
+
+
+# user
+admin = config['user']['admin']
+alist_host = config['user']['alist_host'].removesuffix('/')
+alist_web = config['user']['alist_web'].removesuffix('/')
+alist_token = config['user']['alist_token']
+bot_token = config['user']['bot_token']
+api_id = config['user']['api_id']
+api_hash = config['user']['api_hash']
+# proxy
+scheme = config['proxy']['scheme']
+hostname = config['proxy']['hostname']
+port = config['proxy']['port']
+
+
+# storage_cfg
 def storage_cfg():
     return get_config("config/storage_cfg.yaml")

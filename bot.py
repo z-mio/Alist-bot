@@ -6,16 +6,17 @@ import logging
 import os
 
 import croniter
+import pyrogram
 import requests
-import telegram
 import yaml
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from telegram import Update, BotCommand
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters, MessageHandler
+from pyrogram import Client, filters
+from pyrogram.types import BotCommand
 
 from alist_api import storage_list
-from config.config import config, admin, bot_token, alist_host, alist_token, backup_time, write_config, proxy_url
+from config.config import (config, admin, alist_host, alist_token, backup_time, write_config, api_id, api_hash,
+                           bot_token, scheme, hostname, port)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s: %(message)s',
@@ -24,36 +25,55 @@ logging.basicConfig(
 
 scheduler = AsyncIOScheduler()
 
+proxy = {
+    "scheme": scheme,  # 支持“socks4”、“socks5”和“http”
+    "hostname": hostname,
+    "port": port
+}
+
+if os.path.exists('my_bot.session'):
+    app = (
+        Client("my_bot", proxy=proxy)
+        if scheme and hostname and port
+        else Client("my_bot")
+    )
+elif scheme and hostname and port:
+    app = Client(
+        "my_bot", proxy=proxy,
+        api_id=api_id, api_hash=api_hash,
+        bot_token=bot_token)
+else:
+    app = Client(
+        "my_bot",
+        api_id=api_id, api_hash=api_hash,
+        bot_token=bot_token)
+
 
 # 管理员验证
-def admin_yz(func):  # sourcery skip: remove-unnecessary-else
-    async def wrapper(update, context, *args, **kwargs):
-        user_id = update.effective_user.id
-        try:
-            query = update.callback_query
-            query_user_id = query.from_user.id
-        except AttributeError:
-            query_user_id = 2023
+def admin_yz(func):
+    async def wrapper(client, message, *args, **kwargs):
+        user_id = message.from_user.id
+        query_user_id = getattr(message, "from_user", None)
+        query_user_id = query_user_id.id if query_user_id else 2023
 
-        if user_id == admin:
-            return await func(update, context, *args, **kwargs)
+        if user_id == admin or query_user_id == admin:
+            return await func(client, message, *args, **kwargs)
         else:
-            if query_user_id == admin:
-                return await func(update, context, *args, **kwargs)
-            else:
-                await context.bot.send_message(chat_id=update.effective_chat.id, text="该命令仅管理员可用")
+            await client.send_message(chat_id=message.chat.id, text="该命令仅管理员可用")
 
     return wrapper
 
 
 # 开始
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="发送 /s+文件名 进行搜索")
+@app.on_message(filters.command('start'))
+async def start(_, message):
+    await app.send_message(chat_id=message.chat.id, text="发送 /s+文件名 进行搜索")
 
 
 # 设置菜单
+@app.on_message(filters.command('menu') & filters.private)
 @admin_yz
-async def menu(update, context):
+async def menu(_, message):
     # 管理员私聊可见
     a_bot_menu = [BotCommand(command="start", description="开始"),
                   BotCommand(command="s", description="搜索文件"),
@@ -68,49 +88,28 @@ async def menu(update, context):
     b_bot_menu = [BotCommand(command="start", description="开始"),
                   BotCommand(command="s", description="搜索文件"),
                   ]
-
-    await context.bot.delete_my_commands()  # 删除菜单
-    await context.bot.set_my_commands(a_bot_menu, scope=telegram.BotCommandScopeChat(chat_id=admin))  # 管理员私聊可见
-    await context.bot.set_my_commands(b_bot_menu)  # 全部可见
-    await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text="菜单设置成功，请退出聊天界面重新进入来刷新菜单")
+    await app.delete_bot_commands()
+    await app.set_bot_commands(a_bot_menu, scope=pyrogram.types.BotCommandScopeChat(chat_id=admin))
+    await app.set_bot_commands(b_bot_menu)
+    await app.send_message(chat_id=message.chat.id, text="菜单设置成功，请退出聊天界面重新进入来刷新菜单")
 
 
 # 查看当前配置
+
+@app.on_message(filters.command('cf') & filters.private)
 @admin_yz
-async def cf(update, context):
+async def view_current_config(_, message):
     with open("config/config.yaml", 'r', encoding='utf-8') as f:
         cf_config = yaml.safe_load(f)
     with open("config/cn_dict.json", 'r', encoding='utf-8') as ff:
         cn_dict = json.load(ff)
     b = translate_key(translate_key(cf_config, cn_dict["config_cn"]), cn_dict["common"])
     text = json.dumps(b, indent=4, ensure_ascii=False)
-    await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text=f'<code>{text}</code>',
-                                   parse_mode=telegram.constants.ParseMode.HTML)
-
-
-# 监听普通消息
-
-async def echo_bot(update, context):
-    if "bc" in context.chat_data and context.chat_data["bc"]:
-        message = update.message
-        if message.reply_to_message:
-            bc_message_id = context.chat_data.get("bc_message_id")
-            if message.reply_to_message.message_id == bc_message_id.message_id:
-                note_message_text = message.text
-                await context.bot.delete_message(chat_id=message.chat.id,
-                                                 message_id=message.message_id)
-                await context.bot.edit_message_caption(chat_id=bc_message_id.chat.id,
-                                                       message_id=bc_message_id.message_id,
-                                                       caption=f'#Alist配置备份\n{note_message_text}')
-        else:
-            context.chat_data["bc"] = False
-            context.chat_data.pop("bc_message_id", None)
+    await app.send_message(chat_id=message.chat.id,
+                           text=f'<code>{text}</code>')
 
 
 # 备份alist配置
-
 def backup_config():
     bc_list = ['setting', 'user', 'storage', 'meta']
     bc_dic = {'settings': '', 'users': 'users', 'storages': '', 'metas': ''}
@@ -129,30 +128,45 @@ def backup_config():
     return bc_file_name
 
 
-# 发送备份文件
+# 监听回复消息的消息
+@app.on_message(filters.text & filters.reply & filters.private)
 @admin_yz
-async def send_backup_file(update, context):
+async def echo_bot(_, message):
+    print('普通消息')
+    if message.reply_to_message.document:  # 判断回复的消息是否包含文件
+        await app.delete_messages(chat_id=message.chat.id,
+                                  message_ids=message.id)
+        await app.edit_message_caption(chat_id=message.chat.id,
+                                       message_id=message.reply_to_message_id,
+                                       caption=f'#Alist配置备份\n{message.text}')
+
+
+# 发送备份文件
+@app.on_message(filters.command('bc') & filters.private)
+@admin_yz
+async def send_backup_file(_, message):
     bc_file_name = backup_config()
-    context.chat_data["bc_message_id"] = await context.bot.send_document(chat_id=update.effective_chat.id,
-                                                                         document=bc_file_name,
-                                                                         caption='#Alist配置备份')
-    context.chat_data["bc"] = True
+    await app.send_document(chat_id=message.chat.id,
+                            document=bc_file_name,
+                            caption='#Alist配置备份')
     os.remove(bc_file_name)
 
 
 # 定时任务——发送备份文件
-async def recovery_send_backup_file(_, context):
+async def recovery_send_backup_file():
     bc_file_name = backup_config()
-    await context.bot.send_document(
+    await app.send_document(
         chat_id=admin, document=bc_file_name, caption='#Alist配置定时备份'
     )
     os.remove(bc_file_name)
+    logging.info('定时备份成功')
 
 
 # 设置备份时间&开启定时备份
+@app.on_message(filters.command('sbt') & filters.private)
 @admin_yz
-async def set_backup_time(update, context):
-    time = update.message.text.strip("/sbt ")
+async def set_backup_time(_, message):
+    time = message.text.strip("/sbt ")
     if len(time.split()) == 5:
         config['bot']['backup_time'] = time
         write_config('config/config.yaml', config)
@@ -161,20 +175,20 @@ async def set_backup_time(update, context):
         next_run_time = cron.get_next(datetime.datetime)  # 下一次备份时间
 
         if not scheduler.get_jobs():  # 新建
-            RegularBackup().new_scheduled_backup_task(context)
+            RegularBackup().new_scheduled_backup_task()
             text = f'已开启定时备份！\n下一次备份时间：{next_run_time}'
         else:  # 修改
             RegularBackup().modify_scheduled_backup_task()
             text = f'修改成功！\n下一次备份时间：{next_run_time}'
-        await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text=text)
+        await app.send_message(chat_id=message.chat.id,
+                               text=text)
 
     elif time == '0':
         config['bot']['backup_time'] = time
         write_config('config/config.yaml', config)
         if scheduler.get_jobs():
             RegularBackup().disable_scheduled_backup_task()
-        await context.bot.send_message(chat_id=update.effective_chat.id, text='已关闭定时备份')
+        await app.send_message(chat_id=message.chat.id, text='已关闭定时备份')
     elif not time:
         text = '''格式：/sbt + 5位cron表达式，0为关闭
 
@@ -194,10 +208,9 @@ async def set_backup_time(update, context):
  
 注：bot重启后需要重新设置
 '''
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=text,
-                                       parse_mode=telegram.constants.ParseMode.HTML)
+        await app.send_message(chat_id=message.chat.id, text=text)
     else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text='格式错误')
+        await app.send_message(chat_id=message.chat.id, text='格式错误')
 
 
 # 定时备份
@@ -205,9 +218,8 @@ class RegularBackup:
 
     # 新建定时备份任务
     @staticmethod
-    def new_scheduled_backup_task(context):
+    def new_scheduled_backup_task():
         scheduler.add_job(recovery_send_backup_file, trigger=CronTrigger.from_crontab(backup_time()),
-                          args=(admin, context),
                           id='send_backup_messages_regularly_id')
         scheduler.start()
 
@@ -263,15 +275,15 @@ def translate_key(list_or_dict, translation_dict):  # sourcery skip: assign-if-e
 #####################################################################################
 
 # bot重启后要恢复的任务
-async def recovery_task(context):
+def recovery_task():
     # Alist配置定时备份
-    async def alist_config_timed_backup():
+    def alist_config_timed_backup():
         if backup_time() != '0':
-            logging.info('恢复定时任务')
-            RegularBackup().new_scheduled_backup_task(context)
+            logging.info('定时备份已启动')
+            RegularBackup().new_scheduled_backup_task()
 
-    ###
-    await alist_config_timed_backup()
+    # 运行
+    alist_config_timed_backup()
 
 
 # bot启动时验证
@@ -293,56 +305,17 @@ def examine():
             exit()
 
 
-def main():
+def start_bot():
     from search import search_handlers
-    from storage import storage_handlers, echo_storage
-    application = (
-        ApplicationBuilder()
-        .token(bot_token)
-        .proxy_url(proxy_url)
-        .get_updates_proxy_url(proxy_url)
-        .build()
-        if proxy_url
-        else ApplicationBuilder().token(bot_token).build()
-    )
+    from storage import storage_handlers
 
-    job_queue = application.job_queue
-    job_queue.run_once(recovery_task, 5)  # 定时任务，bot启动时等待5秒运行，只运行一次
+    [app.add_handler(handler) for handler in search_handlers]
+    [app.add_handler(handler) for handler in storage_handlers]
 
-    bot_handlers = [
-        CommandHandler('start', start),
-        CommandHandler('bc', send_backup_file),
-        CommandHandler('cf', cf),
-        CommandHandler('menu', menu),
-        CommandHandler('sbt', set_backup_time),
-
-    ]
-
-    # bot
-    application.add_handlers(bot_handlers)
-
-    # 监听普通消息
-    async def e(update, context):
-        await echo_storage(update, context)
-        await echo_bot(update, context)
-
-    application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), e))
-
-    # search
-    application.add_handlers(search_handlers)
-
-    # storage
-    application.add_handlers(storage_handlers)
-
-    # 启动
-    try:
-        application.run_polling()
-    except telegram.error.InvalidToken:
-        logging.error('token被服务器拒绝，请检查配置bot token')
-    except telegram.error.NetworkError:
-        logging.error('所有连接尝试都失败，请检查配置proxy_url')
+    app.run()
 
 
 if __name__ == '__main__':
     examine()
-    main()
+    recovery_task()
+    start_bot()
