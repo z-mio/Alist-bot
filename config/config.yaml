@@ -12,6 +12,6 @@ user:
   api_id: "" # api_id、api_hash在 https://my.telegram.org/apps 获取
   api_hash: ""
 proxy:
-  scheme: http # 支持“socks4”、“socks5”和“http”，不填则不使用代理
-  hostname: 127.0.0.1
-  port: 7890
+  scheme:  # 支持“socks4”、“socks5”和“http”，不填则不使用代理，例：http
+  hostname: #例：127.0.0.1
+  port: #例：7890
