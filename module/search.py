@@ -2,12 +2,13 @@
 import json
 import math
 import urllib.parse
+
 from pyrogram import filters
 from pyrogram.handlers import MessageHandler
 
-from alist_api import search, fs_get
+from api.alist_api import search, fs_get
 from bot import admin_yz
-from config.config import config, per_page, alist_host, alist_token, z_url, alist_web, write_config
+from config.config import config, per_page, z_url, alist_web, write_config
 
 
 @admin_yz
@@ -50,7 +51,7 @@ async def s(client, message):  # sourcery skip: low-code-quality
         await client.send_message(chat_id=message.chat.id, text="请加上文件名，例：/s 巧克力")
     else:
         # 搜索文件
-        alist_post = search(s_str, per_page(), alist_host, alist_token)
+        alist_post = search(s_str, per_page())
 
         alist_post_json = json.loads(alist_post.text)
 
@@ -82,8 +83,7 @@ async def s(client, message):  # sourcery skip: low-code-quality
 
                 # 获取文件直链
                 if z_url():
-                    z_alist_path = {"path": f"{path}/{file_name}"}
-                    z_alist_post = fs_get(z_alist_path, alist_host, alist_token)  # 获取文件下载信息
+                    z_alist_post = fs_get(f"{path}/{file_name}")  # 获取文件下载信息
                     z_data = json.loads(z_alist_post.text)
                     z_file_url = [z_data['data']['raw_url']]
                 else:
@@ -142,6 +142,9 @@ def pybyte(size, dot=2):
         )
     return human_size
 
+
+#####################################################################################
+#####################################################################################
 
 search_handlers = [
     MessageHandler(s, filters.command('s')),

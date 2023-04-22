@@ -11,10 +11,10 @@ import requests
 import yaml
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from pyrogram import Client, filters
+from pyrogram import Client, filters, enums
 from pyrogram.types import BotCommand
 
-from alist_api import storage_list
+from api.alist_api import storage_list
 from config.config import (config, admin, alist_host, alist_token, backup_time, write_config, api_id, api_hash,
                            bot_token, scheme, hostname, port)
 
@@ -47,6 +47,7 @@ else:
         "my_bot",
         api_id=api_id, api_hash=api_hash,
         bot_token=bot_token)
+app.set_parse_mode(enums.ParseMode.HTML)
 
 
 # 管理员验证
@@ -70,6 +71,16 @@ async def start(_, message):
     await app.send_message(chat_id=message.chat.id, text="发送 /s+文件名 进行搜索")
 
 
+# 帮助
+@app.on_message(filters.command('help') & filters.private)
+@admin_yz
+async def _help(_, message):
+    text = '''
+发送图片查看图床功能
+'''
+    await app.send_message(chat_id=message.chat.id, text=text)
+
+
 # 设置菜单
 @app.on_message(filters.command('menu') & filters.private)
 @admin_yz
@@ -83,6 +94,7 @@ async def menu(_, message):
                   BotCommand(command="cf", description="查看当前配置"),
                   BotCommand(command="bc", description="备份Alist配置"),
                   BotCommand(command="sbt", description="设置定时备份"),
+                  BotCommand(command="help", description="查看帮助"),
                   ]
     # 全部可见
     b_bot_menu = [BotCommand(command="start", description="开始"),
@@ -132,7 +144,6 @@ def backup_config():
 @app.on_message(filters.text & filters.reply & filters.private)
 @admin_yz
 async def echo_bot(_, message):
-    print('普通消息')
     if message.reply_to_message.document:  # 判断回复的消息是否包含文件
         await app.delete_messages(chat_id=message.chat.id,
                                   message_ids=message.id)
@@ -289,7 +300,7 @@ def recovery_task():
 # bot启动时验证
 def examine():
     try:
-        a = storage_list(alist_host, alist_token)
+        a = storage_list()
         code = json.loads(a.text)
     except json.decoder.JSONDecodeError:
         logging.error('连接Alist失败，请检查配置alist_host是否填写正确')
@@ -306,11 +317,13 @@ def examine():
 
 
 def start_bot():
-    from search import search_handlers
-    from storage import storage_handlers
+    from module.search import search_handlers
+    from module.storage import storage_handlers
+    from module.image import image_handlers
 
     [app.add_handler(handler) for handler in search_handlers]
     [app.add_handler(handler) for handler in storage_handlers]
+    [app.add_handler(handler) for handler in image_handlers]
 
     app.run()
 

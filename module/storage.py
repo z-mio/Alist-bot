@@ -10,8 +10,8 @@ from pyrogram import filters
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from alist_api import (storage_update, storage_create, storage_list, storage_get, storage_delete, storage_disable,
-                       storage_enable)
+from api.alist_api import (storage_update, storage_create, storage_list, storage_get, storage_delete, storage_disable,
+                           storage_enable)
 from bot import translate_key, admin_yz
 from config.config import alist_host, alist_token, storage_cfg, write_config, chat_data
 
@@ -205,7 +205,7 @@ async def echo_storage(client, message):
 async def st(client, message):
     # sourcery skip: remove-unnecessary-cast, simplify-constant-sum, sum-comprehension
     try:
-        sl = storage_list(alist_host, alist_token)
+        sl = storage_list()
     except requests.exceptions.ReadTimeout:
         logging.error('连接Alist超时，请检查网站状态')
         await client.send_message(chat_id=message.chat.id, text="连接Alist超时，请检查网站状态")
@@ -232,7 +232,7 @@ async def st(client, message):
 # 返回存储管理菜单
 async def st_return(client):
     # sourcery skip: remove-unnecessary-cast, simplify-constant-sum, sum-comprehension
-    sl = storage_list(alist_host, alist_token)
+    sl = storage_list()
     sl_json = json.loads(sl.text)
     zcc = len(sl_json['data']['content'])
     content_list = sl_json["data"]["content"]
@@ -378,10 +378,10 @@ async def vs_callback(client, bvj):
     storage_id = driver_id[int(bvj)]
     if disabled[bvj]:
         of_t = "✅已开启存储："
-        storage_enable(storage_id, alist_host, alist_token)
+        storage_enable(storage_id)
     else:
         of_t = "❌已关闭存储："
-        storage_disable(storage_id, alist_host, alist_token)
+        storage_disable(storage_id)
     await get_storage(alist_host, alist_token, callback_data_pr='vs')
     button_list.insert(1, vs_all_button)
     button_list.insert(-1, vs_all_button)
@@ -404,7 +404,7 @@ async def vs_on_off_all(client, message, bvj):  # sourcery skip: use-contextlib-
         reply_markup=InlineKeyboardMarkup(button_list))
     for i, is_disabled in enumerate(disabled):
 
-        command(driver_id[i], alist_host, alist_token)
+        command(driver_id[i])
         await get_storage(alist_host, alist_token, callback_data_pr='vs')
         button_list.insert(1, vs_all_button)
         button_list.insert(-1, vs_all_button)
@@ -414,8 +414,8 @@ async def vs_on_off_all(client, message, bvj):  # sourcery skip: use-contextlib-
                 message_id=storage_menu_button.id,
                 text=action,
                 reply_markup=InlineKeyboardMarkup(button_list))
-        except Exception:
-            ...
+        except Exception as e:
+            logging.info(e)
 
 
 # 复制存储
@@ -423,7 +423,7 @@ async def cs_callback(client, bvj):
     cs_storage = []
     cs_storage.clear()
     storage_id = str(driver_id[int(bvj)])
-    cs_alist_get = storage_get(storage_id, alist_host, alist_token)  # 获取存储
+    cs_alist_get = storage_get(storage_id)  # 获取存储
     cs_json = json.loads(cs_alist_get.text)
 
     cs_storage.append(cs_json['data'])  # 保存获取的存储
@@ -442,7 +442,7 @@ async def cs_callback(client, bvj):
     cs_storage[0]['remark'] = f"{mount_path[bvj]} -> {cs_storage[0]['mount_path']}\n{cs_storage[0]['remark']}"
 
     body = cs_storage[0]
-    storage_create(body, alist_host, alist_token)  # 新建存储
+    storage_create(body)  # 新建存储
 
     await get_storage(alist_host, alist_token, callback_data_pr='cs')
     await client.edit_message_text(
@@ -457,7 +457,7 @@ async def cs_callback(client, bvj):
 async def ds_callback(client, bvj):
     # sourcery skip: use-fstring-for-concatenation
     storage_id = driver_id[int(bvj)]
-    storage_delete(storage_id, alist_host, alist_token)
+    storage_delete(storage_id)
     stid = mount_path[bvj]
     await get_storage(alist_host, alist_token, callback_data_pr='ds')
     await client.edit_message_text(
@@ -558,7 +558,7 @@ async def ns_new_a(client, message):
     else:
 
         ns_body = remove_quotes(st_cfg)
-        ns_alist_post = storage_create(ns_body, alist_host, alist_token)  # 新建存储
+        ns_alist_post = storage_create(ns_body)  # 新建存储
         ns_json = json.loads(ns_alist_post.text)
 
         if ns_json['code'] == 200:
@@ -578,11 +578,11 @@ async def ns_new_a(client, message):
             )
         elif ns_json['code'] == 500:
             storage_id = str(ns_json['data']['id'])
-            ns_get_get = storage_get(storage_id, alist_host, alist_token)  # 查询指定存储信息
+            ns_get_get = storage_get(storage_id)  # 查询指定存储信息
             ns_get_json = json.loads(ns_get_get.text)
 
             ns_update_json = ns_get_json['data']
-            ns_update_post = storage_update(ns_update_json, alist_host, alist_token)  # 更新存储
+            ns_update_post = storage_update(ns_update_json)  # 更新存储
             ns_up_json = json.loads(ns_update_post.text)
 
             if ns_up_json['code'] == 200:
@@ -661,8 +661,8 @@ async def ns_new_b(client, message):
                                                                      callback_data='ns_re_list_mode_b')]
                                            ])
                                            )
-        except Exception:
-            ...
+        except Exception as e:
+            logging.info(e)
         message_text_list.pop()
     return
 
@@ -699,17 +699,17 @@ async def ns_new_b_start(client, message):
     for i in range(len(ns_new_b_list)):
         st_cfg = ns_new_b_list[i]
         ns_body = remove_quotes(st_cfg)
-        ns_alist_post = storage_create(ns_body, alist_host, alist_token)  # 新建存储
+        ns_alist_post = storage_create(ns_body)  # 新建存储
         ns_json = json.loads(ns_alist_post.text)
         mount_path = ns_new_b_list[i]["mount_path"]
         if ns_json['code'] == 200:
             message_b.append(f'{mount_path} 添加成功！')
         elif ns_json['code'] == 500 and 'but storage is already created' in ns_json['data']:  # 初始化存储失败，但存储已经创建
             storage_id = str(ns_json['data']['id'])
-            ns_get_get = storage_get(storage_id, alist_host, alist_token)  # 查询指定存储信息
+            ns_get_get = storage_get(storage_id)  # 查询指定存储信息
             ns_get_json = json.loads(ns_get_get.text)
             ns_update_json = ns_get_json['data']
-            ns_update_post = storage_update(ns_update_json, alist_host, alist_token)  # 更新存储
+            ns_update_post = storage_update(ns_update_json)  # 更新存储
             ns_up_json = json.loads(ns_update_post.text)
             if ns_up_json['code'] == 200:
                 message_b.append(f'{mount_path} 添加成功！')
@@ -752,7 +752,7 @@ async def ns_re_list_mode_b(client):
 
 # 复制存储配置
 async def st_storage_copy_cfg(client, message, bvj):
-    get = json.loads(storage_get(driver_id[int(bvj)], alist_host, alist_token).text)
+    get = json.loads(storage_get(driver_id[int(bvj)]).text)
     get_a, get_b = get['data'], json.loads(get['data']['addition'])
 
     get_a = translate_key(translate_key(get_a, text_dict['common']), text_dict['additional'])
@@ -820,7 +820,7 @@ async def st_storage_cfg_amend(client, message):
         else:
             t = translate_key(message_text, new_dict)
             t_d = {'storage': t}
-            write_config("config/storage_cfg.yaml", t_d)
+            write_config("../config/storage_cfg.yaml", t_d)
             await st_storage_amend(client)
 
 
@@ -860,7 +860,7 @@ async def get_storage(alist_host, alist_token, callback_data_pr):
     driver_id.clear()
     button_list.clear()
 
-    vs_alist_post = storage_list(alist_host, alist_token)  # 获取存储列表
+    vs_alist_post = storage_list()  # 获取存储列表
     vs_data = json.loads(vs_alist_post.text)
 
     for item in vs_data['data']['content']:

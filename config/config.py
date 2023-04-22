@@ -11,8 +11,8 @@ def get_config(path):
 
 
 def write_config(path, modified_config):
-    with open(path, 'w') as f:
-        yaml.dump(modified_config, f)
+    with open(path, 'w', encoding='utf-8') as f:
+        yaml.dump(modified_config, f, allow_unicode=True)
 
 
 config = get_config("config/config.yaml")
@@ -48,3 +48,15 @@ port = config['proxy']['port']
 # storage_cfg
 def storage_cfg():
     return get_config("config/storage_cfg.yaml")
+
+
+# image_cfg
+image_config = get_config("config/image_cfg.yaml")
+
+
+def image_save_path():
+    return image_config['image_save_path'].lstrip('/')
+
+
+def image_upload_path():
+    return image_config['image_upload_path'].lstrip('/')
