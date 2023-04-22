@@ -134,7 +134,7 @@ git clone https://github.com/z-mio/Alist-bot.git && cd Alist-bot && pip3 install
 
 ``` 
 user:
-  admin: 123456789 # 管理员用户id,可以添加多个，可通过@get_id_bot获取id
+  admin: 123456789 # 管理员用户id,可通过@get_id_bot获取id
   alist_host: http://127.0.0.1:5244 # alist ip:port或alist域名，一般填域名即可
   alist_web: "https://" # 你的alist域名
   alist_token: "" # alist token

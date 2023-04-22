@@ -4,7 +4,7 @@ bot:
     per_page: 5
     z_url: false
 user:
-  admin: 123456789 # 管理员用户id,可以添加多个，可通过@get_id_bot获取id
+  admin: 123456789 # 管理员用户id，可通过@get_id_bot获取id
   alist_host: http://127.0.0.1:5244 # alist ip:port或alist域名，一般填域名即可
   alist_web: "https://" # 你的alist域名
   alist_token: "" # alist token
@@ -12,6 +12,6 @@ user:
   api_id: "" # api_id、api_hash在 https://my.telegram.org/apps 获取
   api_hash: ""
 proxy:
-  scheme: http # 支持“socks4”、“socks5”和“http”，不填则不使用代理
-  hostname: 127.0.0.1
-  port: 7890
+  scheme:  # 支持“socks4”、“socks5”和“http”，不填则不使用代理，例：http
+  hostname: #例：127.0.0.1
+  port: #例：7890
