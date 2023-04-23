@@ -216,8 +216,7 @@ async def set_backup_time(_, message):
  | | | |  ——星期（0 - 7，星期日=0或7）
  | | | | |
  * * * * *
- 
-注：bot重启后需要重新设置
+
 '''
         await app.send_message(chat_id=message.chat.id, text=text)
     else:
