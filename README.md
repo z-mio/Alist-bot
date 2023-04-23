@@ -15,9 +15,10 @@
     - [x] 新建存储
     - [x] 批量新建存储
 - [x] Alist配置备份&定时备份
+- [x] Alist图床
 - [ ] tg文件转存
 - [ ] tg频道订阅
-- [ ] 图床
+
 
 ### 功能预览&说明:
 
@@ -112,6 +113,14 @@
 </details>
 
 </details>
+
+<details>
+<summary><b> 图床</b></summary>
+
+![i5mjHX.gif](https://i.328888.xyz/2023/04/23/i5mjHX.gif)
+
+</details>
+
 
 </details>
 
