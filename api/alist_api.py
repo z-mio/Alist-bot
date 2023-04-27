@@ -88,7 +88,7 @@ def storage_disable(storage_id):
 
 
 # 上传文件
-# https://github.com/lym12321/Alist-SDK/blob/dde4bcc74893f9e62281482a2395abe9a1dd8d15/alist.py#L67
+# from https://github.com/lym12321/Alist-SDK/blob/dde4bcc74893f9e62281482a2395abe9a1dd8d15/alist.py#L67
 
 def upload(local_path, remote_path, file_name):
     useragent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36'
@@ -104,11 +104,11 @@ def upload(local_path, remote_path, file_name):
         requests.put(url, headers=header, data=open(local_path, 'rb').read()).text)
 
 
-# 获取目录列表，强制刷新
+# 强制刷新列表
 
 def refresh_list(path):
     url = f'{alist_host}/api/fs/list'
     header = {"Authorization": alist_token}
-    body = {"path": path, "page": 1, "per_page": 0, "refresh": True}
+    body = {"path": path, "page": 1, "per_page": 1, "refresh": True}
 
     return requests.post(url, json=body, headers=header, timeout=10)
