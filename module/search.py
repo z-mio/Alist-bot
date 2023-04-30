@@ -67,7 +67,7 @@ async def s(client, message):  # sourcery skip: low-code-quality
             count = 0
             tg_text = ""
             global pointer, pages
-            pointer, pages, m = 0, 1, 0
+            pointer, pages, tt = 0, 1, 0
             for item in alist_post_json['data']['content']:
                 name_list.append(item['name'])
                 parent_list.append(item['parent'])
@@ -107,11 +107,8 @@ async def s(client, message):  # sourcery skip: low-code-quality
 
                 if count >= per_page() + 1:
                     continue
-                m = await client.edit_message_text(chat_id=message.chat.id,
-                                                   message_id=search1.id,
-                                                   text=tg_text,
-                                                   disable_web_page_preview=True
-                                                   )
+                tt = tg_text
+
             page_count = (len(search_results) + per_page() - 1) // per_page()
             search_button = [
                 [
@@ -125,7 +122,7 @@ async def s(client, message):  # sourcery skip: low-code-quality
             ]
             await client.edit_message_text(chat_id=message.chat.id,
                                            message_id=search1.id,
-                                           text=m.text,
+                                           text=tt,
                                            reply_markup=InlineKeyboardMarkup(search_button),
                                            disable_web_page_preview=True
                                            )
@@ -134,21 +131,11 @@ async def s(client, message):  # sourcery skip: low-code-quality
 # 翻页
 async def search_button_callback(client, message):
     query = message.data
-    message_id = message.message.id
-    global pointer, pages
-    page_count = (len(search_results) + per_page() - 1) // per_page()
 
-    if query == 'next_page':
-        pointer += 5  # 指针每次加5，表示下一页
-        pages += 1
-    elif query == 'previous_page':
-        pages -= 1
-        pointer -= 5  # 指针每次加5，表示上一页
-
-    text = search_results[pointer:pointer + 5]
-    tg_text = ''
-    for i in text:
-        tg_text += i
+    async def turn():
+        text = search_results[pointer:pointer + 5]
+        message_id = message.message.id
+        tg_text = ''.join(text)
         search_button = [
             [
                 InlineKeyboardButton(f'{pages}/{page_count}', callback_data='pages')
@@ -164,6 +151,20 @@ async def search_button_callback(client, message):
                                        reply_markup=InlineKeyboardMarkup(search_button),
                                        disable_web_page_preview=True
                                        )
+
+    global pointer, pages
+    if query != 'pages':
+        page_count = (len(search_results) + per_page() - 1) // per_page()
+        if query == 'next_page':
+            if pages < page_count:
+                pointer += 5  # 指针每次加5，表示下一页
+                pages += 1
+                await turn()
+        elif query == 'previous_page':
+            if pages > 1:
+                pages -= 1
+                pointer -= 5  # 指针每次加5，表示上一页
+                await turn()
 
 
 #####################################################################################
