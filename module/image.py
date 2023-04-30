@@ -50,7 +50,7 @@ async def download_upload(client, message):
                                    message_id=msg.id,
                                    text='🔄刷新列表中...',
                                    disable_web_page_preview=False)
-    refresh_list(image_upload_path())
+    refresh_list(image_upload_path(), 1)
 
     # 获取文件信息
     await client.edit_message_text(chat_id=msg.chat.id,

@@ -9,12 +9,12 @@ from config.config import alist_host, alist_token
 
 
 # 搜索文件
-def search(file_name, per_page):
+def search(file_name, page: int = 1, per_page: int = 100):
     url = f'{alist_host}/api/fs/search'
     header = {"Authorization": alist_token, }
     body = {"parent": "/",
             "keywords": file_name,
-            "page": 1,
+            "page": page,
             "per_page": per_page
             }
 
@@ -104,11 +104,21 @@ def upload(local_path, remote_path, file_name):
         requests.put(url, headers=header, data=open(local_path, 'rb').read()).text)
 
 
-# 强制刷新列表
+# 获取列表，强制刷新列表
 
-def refresh_list(path):
+def refresh_list(path, per_page: int = 0):
     url = f'{alist_host}/api/fs/list'
     header = {"Authorization": alist_token}
-    body = {"path": path, "page": 1, "per_page": 1, "refresh": True}
+    body = {"path": path, "page": 1, "per_page": per_page, "refresh": True}
 
     return requests.post(url, json=body, headers=header, timeout=10)
+
+
+# 获取驱动列表
+
+def get_driver():
+    url = f'{alist_host}/api/admin/driver/list'
+    header = {"Authorization": alist_token}
+
+    return requests.get(url, headers=header, timeout=10)
+# print(json.dumps(json.loads(get_driver().text)['data']))

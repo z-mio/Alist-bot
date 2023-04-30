@@ -938,6 +938,22 @@
         "help": ""
       },
       {
+        "name": "meta_password",
+        "type": "string",
+        "default": "",
+        "options": "",
+        "required": false,
+        "help": ""
+      },
+      {
+        "name": "username",
+        "type": "string",
+        "default": "",
+        "options": "",
+        "required": false,
+        "help": ""
+      },
+      {
         "name": "password",
         "type": "string",
         "default": "",
@@ -946,7 +962,7 @@
         "help": ""
       },
       {
-        "name": "access_token",
+        "name": "token",
         "type": "string",
         "default": "",
         "options": "",
@@ -3697,8 +3713,8 @@
     "config": {
       "name": "Quark",
       "local_sort": false,
-      "only_local": false,
-      "only_proxy": true,
+      "only_local": true,
+      "only_proxy": false,
       "no_cache": false,
       "no_upload": false,
       "need_ms": false,

@@ -96,10 +96,12 @@ async def menu(_, message):
                   BotCommand(command="sbt", description="设置定时备份"),
                   BotCommand(command="help", description="查看帮助"),
                   ]
+
     # 全部可见
     b_bot_menu = [BotCommand(command="start", description="开始"),
                   BotCommand(command="s", description="搜索文件"),
                   ]
+
     await app.delete_bot_commands()
     await app.set_bot_commands(a_bot_menu, scope=pyrogram.types.BotCommandScopeChat(chat_id=admin))
     await app.set_bot_commands(b_bot_menu)
@@ -319,10 +321,10 @@ def start_bot():
     from module.search import search_handlers
     from module.storage import storage_handlers
     from module.image import image_handlers
+    from module.update_push import update_push_handlers
 
-    [app.add_handler(handler) for handler in search_handlers]
-    [app.add_handler(handler) for handler in storage_handlers]
-    [app.add_handler(handler) for handler in image_handlers]
+    [app.add_handler(handler) for handler in
+     search_handlers + update_push_handlers + storage_handlers + image_handlers]
 
     app.run()
 
