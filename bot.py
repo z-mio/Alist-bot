@@ -321,10 +321,9 @@ def start_bot():
     from module.search import search_handlers
     from module.storage import storage_handlers
     from module.image import image_handlers
-    from module.update_push import update_push_handlers
 
     [app.add_handler(handler) for handler in
-     search_handlers + update_push_handlers + storage_handlers + image_handlers]
+     search_handlers + storage_handlers + image_handlers]
 
     app.run()
 
