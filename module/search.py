@@ -42,16 +42,14 @@ async def zl(client, message):
     write_config("config/config.yaml", config)
 
 
-search_results = []
-pointer = 0  # 翻页
-pages = 1  # button默认页数
+chat_id_message = {}
 
 
 # 搜索
 async def s(client, message):  # sourcery skip: low-code-quality
     text_caps = message.text
     s_str = text_caps.strip("/s @")
-    search_results.clear()
+
     if s_str == "" or "_bot" in s_str:
         await client.send_message(chat_id=message.chat.id, text="请加上文件名，例：/s 巧克力")
     else:
@@ -64,11 +62,8 @@ async def s(client, message):  # sourcery skip: low-code-quality
             search1 = await client.send_message(chat_id=message.chat.id, text="搜索中...")
             # 文件/文件夹名字 文件/文件夹路径 文件大小 是否是文件夹
             name_list = parent_list = size_list = is_dir_list = []
-            count = 0
-            tg_text = ""
-            global pointer, pages
-            pointer, pages, tt = 0, 1, 0
-            for item in alist_post_json['data']['content']:
+            textx = []
+            for count, item in enumerate(alist_post_json['data']['content']):
                 name_list.append(item['name'])
                 parent_list.append(item['parent'])
                 size_list.append(item['size'])
@@ -95,21 +90,14 @@ async def s(client, message):  # sourcery skip: low-code-quality
 
                 ########################
                 file_url = urllib.parse.quote(file_url, safe=':/')
-                text = f'''{count + 1}.{folder_tg_text}{file_name}
+                text = f'''{count + 1}.{folder_tg_text}<code>{file_name}</code>
 <a href="{file_url}">🌐打开网站</a>|{z_url_link}{z_folder_f}大小: {pybyte(file_size)}
 
 '''
-                #########################
-
-                tg_text += text
-                count += 1
-                search_results.append(text)
-
-                if count >= per_page() + 1:
-                    continue
-                tt = tg_text
-
-            page_count = (len(search_results) + per_page() - 1) // per_page()
+                textx += [text]
+            chat_id = message.chat.id
+            chat_id_message[chat_id] = {'page': 1, 'pointer': 0, 'text': textx}
+            page_count = (len(chat_id_message[chat_id]['text']) + per_page() - 1) // per_page()
             search_button = [
                 [
                     InlineKeyboardButton(f'1/{page_count}', callback_data='pages')
@@ -122,7 +110,7 @@ async def s(client, message):  # sourcery skip: low-code-quality
             ]
             await client.edit_message_text(chat_id=message.chat.id,
                                            message_id=search1.id,
-                                           text=tt,
+                                           text=''.join(chat_id_message[chat_id]['text'][:5]),
                                            reply_markup=InlineKeyboardMarkup(search_button),
                                            disable_web_page_preview=True
                                            )
@@ -131,14 +119,16 @@ async def s(client, message):  # sourcery skip: low-code-quality
 # 翻页
 async def search_button_callback(client, message):
     query = message.data
+    chat_id = message.message.chat.id
 
     async def turn():
-        text = search_results[pointer:pointer + 5]
+        pointer = chat_id_message[chat_id]['pointer']
+        text = chat_id_message[chat_id]['text'][pointer:pointer + 5]
+
         message_id = message.message.id
-        tg_text = ''.join(text)
         search_button = [
             [
-                InlineKeyboardButton(f'{pages}/{page_count}', callback_data='pages')
+                InlineKeyboardButton(f"{chat_id_message[chat_id]['page']}/{page_count}", callback_data='pages')
             ],
             [
                 InlineKeyboardButton('⬆️上一页', callback_data='previous_page'),
@@ -147,23 +137,23 @@ async def search_button_callback(client, message):
         ]
         await client.edit_message_text(chat_id=message.message.chat.id,
                                        message_id=message_id,
-                                       text=tg_text,
+                                       text=''.join(text),
                                        reply_markup=InlineKeyboardMarkup(search_button),
                                        disable_web_page_preview=True
                                        )
 
-    global pointer, pages
+    page = chat_id_message[chat_id]['page']
     if query != 'pages':
-        page_count = (len(search_results) + per_page() - 1) // per_page()
+        page_count = (len(chat_id_message[chat_id]['text']) + per_page() - 1) // per_page()
         if query == 'next_page':
-            if pages < page_count:
-                pointer += 5  # 指针每次加5，表示下一页
-                pages += 1
+            if page < page_count:
+                chat_id_message[chat_id]['pointer'] += 5  # 指针每次加5，表示下一页
+                chat_id_message[chat_id]['page'] += 1
                 await turn()
         elif query == 'previous_page':
-            if pages > 1:
-                pages -= 1
-                pointer -= 5  # 指针每次加5，表示上一页
+            if page > 1:
+                chat_id_message[chat_id]['page'] -= 1
+                chat_id_message[chat_id]['pointer'] -= 5  # 指针每次加5，表示上一页
                 await turn()
 
 
