@@ -62,9 +62,4 @@ def image_upload_path():
     return image_config['image_upload_path'].lstrip('/')
 
 
-# update_push
-push_config = get_config("config/update_push_cfg.yaml")
 
-
-def update_list():
-    return push_config['list']
