@@ -179,7 +179,7 @@ async def recovery_send_backup_file():
 @app.on_message(filters.command('sbt') & filters.private)
 @admin_yz
 async def set_backup_time(_, message):
-    time = message.text.replace('/sbt ', '', 1)
+    time = ' '.join(message.command[1:])
     if len(time.split()) == 5:
         config['bot']['backup_time'] = time
         write_config('config/config.yaml', config)

@@ -15,7 +15,7 @@ from config.config import config, per_page, z_url, alist_web, write_config
 @admin_yz
 async def sl(client, message):
     text_caps = message.text
-    sl_str = text_caps.replace('/sl ', '', 1)
+    sl_str = ' '.join(text_caps[1:])
     if sl_str.isdigit():
         config['bot']['search']['per_page'] = int(sl_str)
         write_config("config/config.yaml", config)
@@ -30,7 +30,7 @@ async def sl(client, message):
 @admin_yz
 async def zl(client, message):
     text_caps = message.text
-    zl_str = text_caps.replace('/zl ', '', 1)
+    zl_str = ' '.join(text_caps[1:])
     if zl_str == "1":
         config['bot']['search']['z_url'] = True
         await client.send_message(chat_id=message.chat.id, text="已开启直链")
@@ -48,7 +48,7 @@ chat_id_message = {}
 # 搜索
 async def s(client, message):  # sourcery skip: low-code-quality
     text_caps = message.text
-    s_str = text_caps.replace('/s ', '', 1)
+    s_str = ' '.join(text_caps[1:])
 
     if s_str == "" or "_bot" in s_str:
         await client.send_message(chat_id=message.chat.id, text="请加上文件名，例：/s 巧克力")
