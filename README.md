@@ -22,6 +22,7 @@
 - [ ] tg文件转存
 - [ ] tg频道订阅
 
+
 ### 功能预览&说明:
 
 <details>
@@ -117,6 +118,8 @@
 
 <details>
 <summary><b> 图床</b></summary>
+
+默认4线程
 
 ![i5mjHX.gif](https://i.328888.xyz/2023/04/23/i5mjHX.gif)
 
