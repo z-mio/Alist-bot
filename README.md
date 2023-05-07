@@ -32,9 +32,11 @@
 <details>
 <summary><b>搜索</b></summary>
 
-和alist搜索方式一样  
+和alist搜索方式一样
+新增翻页
 
 ![搜索预览图](https://i.328888.xyz/2023/03/11/soMAw.gif)
+![iaaPPq.png](https://i.328888.xyz/2023/05/07/iaaPPq.png)
 
 </details>
 
