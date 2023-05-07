@@ -141,12 +141,12 @@ async def search_button_callback(client, message):
 
     page = chat_id_message[chat_id]['page']
     page_count = (len(chat_id_message[chat_id]['text']) + per_page() - 1) // per_page()
-    if query == 'next_page':
+    if query == 'search_next_page':
         if page < page_count:
             chat_id_message[chat_id]['pointer'] += 5  # 指针每次加5，表示下一页
             chat_id_message[chat_id]['page'] += 1
             await turn()
-    elif query == 'previous_page':
+    elif query == 'search_previous_page':
         if page > 1:
             chat_id_message[chat_id]['page'] -= 1
             chat_id_message[chat_id]['pointer'] -= 5  # 指针每次加5，表示上一页
