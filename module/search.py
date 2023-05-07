@@ -97,11 +97,11 @@ async def s(client, message):  # sourcery skip: low-code-quality
             page_count = (len(chat_id_message[chat_id]['text']) + per_page() - 1) // per_page()
             search_button = [
                 [
-                    InlineKeyboardButton(f'1/{page_count}', callback_data='pages')
+                    InlineKeyboardButton(f'1/{page_count}', callback_data='search_pages')
                 ],
                 [
-                    InlineKeyboardButton('⬆️上一页', callback_data='previous_page'),
-                    InlineKeyboardButton('⬇️下一页', callback_data='next_page')
+                    InlineKeyboardButton('⬆️上一页', callback_data='search_previous_page'),
+                    InlineKeyboardButton('⬇️下一页', callback_data='search_next_page')
                 ],
 
             ]
@@ -125,11 +125,11 @@ async def search_button_callback(client, message):
         message_id = message.message.id
         search_button = [
             [
-                InlineKeyboardButton(f"{chat_id_message[chat_id]['page']}/{page_count}", callback_data='pages')
+                InlineKeyboardButton(f"{chat_id_message[chat_id]['page']}/{page_count}", callback_data='search_pages')
             ],
             [
-                InlineKeyboardButton('⬆️上一页', callback_data='previous_page'),
-                InlineKeyboardButton('⬇️下一页', callback_data='next_page')
+                InlineKeyboardButton('⬆️上一页', callback_data='search_previous_page'),
+                InlineKeyboardButton('⬇️下一页', callback_data='search_next_page')
             ],
         ]
         await client.edit_message_text(chat_id=message.message.chat.id,
@@ -140,18 +140,17 @@ async def search_button_callback(client, message):
                                        )
 
     page = chat_id_message[chat_id]['page']
-    if query != 'pages':
-        page_count = (len(chat_id_message[chat_id]['text']) + per_page() - 1) // per_page()
-        if query == 'next_page':
-            if page < page_count:
-                chat_id_message[chat_id]['pointer'] += 5  # 指针每次加5，表示下一页
-                chat_id_message[chat_id]['page'] += 1
-                await turn()
-        elif query == 'previous_page':
-            if page > 1:
-                chat_id_message[chat_id]['page'] -= 1
-                chat_id_message[chat_id]['pointer'] -= 5  # 指针每次加5，表示上一页
-                await turn()
+    page_count = (len(chat_id_message[chat_id]['text']) + per_page() - 1) // per_page()
+    if query == 'next_page':
+        if page < page_count:
+            chat_id_message[chat_id]['pointer'] += 5  # 指针每次加5，表示下一页
+            chat_id_message[chat_id]['page'] += 1
+            await turn()
+    elif query == 'previous_page':
+        if page > 1:
+            chat_id_message[chat_id]['page'] -= 1
+            chat_id_message[chat_id]['pointer'] -= 5  # 指针每次加5，表示上一页
+            await turn()
 
 
 #####################################################################################
@@ -189,5 +188,5 @@ search_handlers = [
     MessageHandler(s, filters.command('s')),
     MessageHandler(sl, filters.command('sl')),
     MessageHandler(zl, filters.command('zl')),
-    CallbackQueryHandler(search_button_callback),
+    CallbackQueryHandler(search_button_callback, filters.regex(r'^search')),
 ]
