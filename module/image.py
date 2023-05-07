@@ -5,6 +5,7 @@ import datetime
 import json
 import os
 import random
+import time
 
 from pyrogram import filters
 from pyrogram.handlers import MessageHandler
@@ -14,7 +15,7 @@ from bot import admin_yz
 from config.config import image_upload_path, image_save_path, alist_web, image_config, write_config
 
 # 5线程
-thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=5)
+thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 
 async def download_upload(client, message):
@@ -33,6 +34,7 @@ async def download_upload(client, message):
     file_name_path = f'{image_save_path()}/{file_name}'
 
     # 下载图片
+    time.sleep(random.uniform(0.01, 0.2))
     msg = await message.reply_text(text='📥下载图片中...', quote=True, disable_web_page_preview=False)
     await message.download(file_name=file_name_path)
     # 上传到alist
@@ -40,6 +42,7 @@ async def download_upload(client, message):
                                    message_id=msg.id,
                                    text='📤上传图片中...',
                                    disable_web_page_preview=False)
+    time.sleep(random.uniform(0.01, 0.2))
     upload(file_name_path, image_upload_path(), file_name)
 
     # 删除图片
@@ -50,13 +53,14 @@ async def download_upload(client, message):
                                    message_id=msg.id,
                                    text='🔄刷新列表中...',
                                    disable_web_page_preview=False)
+    time.sleep(random.uniform(0.01, 0.2))
     refresh_list(image_upload_path(), 1)
-
     # 获取文件信息
     await client.edit_message_text(chat_id=msg.chat.id,
                                    message_id=msg.id,
                                    text='⏳获取链接中...',
                                    disable_web_page_preview=False)
+    time.sleep(random.uniform(0.01, 0.2))
     get_url = fs_get(f'{image_upload_path()}/{file_name}')
     get_url_json = json.loads(get_url.text)
     image_url = get_url_json['data']['raw_url']  # 直链
