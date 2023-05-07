@@ -90,11 +90,13 @@ def storage_disable(storage_id):
 # 上传文件
 # from https://github.com/lym12321/Alist-SDK/blob/dde4bcc74893f9e62281482a2395abe9a1dd8d15/alist.py#L67
 
-def upload(local_path, remote_path, file_name):
-    useragent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36'
+def upload(local_path, remote_path, file_name, as_task: bool = 'false'):
+    useragent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' \
+                'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36'
     url = f'{alist_host}/api/fs/put'
     header = {
         'UserAgent': useragent,
+        'As-Task': as_task,
         'Authorization': alist_token,
         'File-Path': parse.quote(f'{remote_path}/{file_name}'),
         'Content-Length': f'{os.path.getsize(local_path)}'

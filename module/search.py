@@ -50,7 +50,7 @@ async def s(client, message):  # sourcery skip: low-code-quality
     text_caps = message.text
     s_str = ' '.join(text_caps[1:])
 
-    if s_str == "" or "_bot" in s_str:
+    if not s_str or "_bot" in s_str:
         await client.send_message(chat_id=message.chat.id, text="请加上文件名，例：/s 巧克力")
     else:
         # 搜索文件
