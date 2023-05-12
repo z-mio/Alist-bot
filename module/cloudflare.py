@@ -294,35 +294,32 @@ async def account_add(client, _):
 async def account_edit(client, message):
     mt = message.text
 
-    try:
-        if mt[0] != '*':
+    if mt[0] != '*':
 
-            i = mt.split('\n')
+        i = mt.split('\n')
 
-            lz = list_zones(i[0], i[1])  # 获取区域id
-            lz = json.loads(lz.text)
+        lz = list_zones(i[0], i[1])  # 获取区域id
+        lz = json.loads(lz.text)
 
-            account_id = lz['result'][0]['account']['id']
-            zone_id = lz['result'][0]['id']
+        account_id = lz['result'][0]['account']['id']
+        zone_id = lz['result'][0]['id']
 
-            lf = list_filters(i[0], i[1], zone_id)  # 获取url
-            lf = json.loads(lf.text)
+        lf = list_filters(i[0], i[1], zone_id)  # 获取url
+        lf = json.loads(lf.text)
 
-            url = lf['result'][0]['pattern'].rstrip('/*')
-            d = {"url": url, "email": i[0], "global_api_key": i[1], "account_id": account_id, "zone_id": zone_id}
-
+        url = lf['result'][0]['pattern'].rstrip('/*')
+        d = {"url": url, "email": i[0], "global_api_key": i[1], "account_id": account_id, "zone_id": zone_id}
+        if cloudflare_cfg['node']:
             cloudflare_cfg['node'].append(d)
-
         else:
-            i = int(mt.split('*')[1])
-            del cloudflare_cfg['node'][i - 1]
-        write_config("config/cloudflare_cfg.yaml", cloudflare_cfg)
-        await client.delete_messages(chat_id=message.chat.id, message_ids=message.id)
-        await account_add(client, message)
-    except Exception as e:
-        await client.send_message(chat_id=message.chat.id,
-                                  text=e)
-        logging.error(e)
+            cloudflare_cfg['node'] = [d]
+
+    else:
+        i = int(mt.split('*')[1])
+        del cloudflare_cfg['node'][i - 1]
+    write_config("config/cloudflare_cfg.yaml", cloudflare_cfg)
+    await client.delete_messages(chat_id=message.chat.id, message_ids=message.id)
+    await account_add(client, message)
 
 
 # 定时任务
