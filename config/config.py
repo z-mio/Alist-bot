@@ -62,4 +62,13 @@ def image_upload_path():
     return image_config['image_upload_path'].lstrip('/')
 
 
+# cloudflare_cfg
+cloudflare_cfg = get_config("config/cloudflare_cfg.yaml")
 
+
+def nodee():
+    return cloudflare_cfg['node']
+
+
+def cronjob():
+    return cloudflare_cfg['cronjob']

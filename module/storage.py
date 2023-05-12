@@ -2,9 +2,8 @@
 import datetime
 import json
 import logging
-import re
-
 import pyrogram
+import re
 import requests
 from pyrogram import filters
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
@@ -13,7 +12,7 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from api.alist_api import (storage_update, storage_create, storage_list, storage_get, storage_delete, storage_disable,
                            storage_enable)
 from bot import translate_key, admin_yz
-from config.config import alist_host, alist_token, storage_cfg, write_config, chat_data
+from config.config import storage_cfg, write_config, chat_data
 
 mount_path = []  # 存储路径
 disabled = []  # 存储是否禁用
@@ -200,51 +199,38 @@ async def echo_storage(client, message):
     return
 
 
-# 存储管理菜单
-@admin_yz
-async def st(client, message):
-    # sourcery skip: remove-unnecessary-cast, simplify-constant-sum, sum-comprehension
+def st_aaa():
     try:
         sl = storage_list()
     except requests.exceptions.ReadTimeout:
         logging.error('连接Alist超时，请检查网站状态')
-        await client.send_message(chat_id=message.chat.id, text="连接Alist超时，请检查网站状态")
     else:
         sl_json = json.loads(sl.text)
         zcc = len(sl_json['data']['content'])
         content_list = sl_json["data"]["content"]
-        jysl = 0
-        for item in content_list:
-            if item["disabled"]:
-                jysl += 1
+        jysl = sum(1 for item in content_list if item["disabled"])
         qysl = zcc - jysl
-        text = f'存储数量：{zcc}\n启用：{qysl}\n禁用：{jysl}'
-        chat_data['storage_menu_button'] = await client.send_message(
-            chat_id=message.chat.id,
-            text=text,
-            reply_markup=InlineKeyboardMarkup(
-                st_button)
-        )
-        global storage_menu_button
-        storage_menu_button = chat_data.get('storage_menu_button')
+        return f'存储数量：{zcc}\n启用：{qysl}\n禁用：{jysl}'
+
+
+# 存储管理菜单
+@admin_yz
+async def st(client, message):
+    chat_data['storage_menu_button'] = await client.send_message(
+        chat_id=message.chat.id,
+        text=st_aaa(),
+        reply_markup=InlineKeyboardMarkup(
+            st_button)
+    )
+    global storage_menu_button
+    storage_menu_button = chat_data.get('storage_menu_button')
 
 
 # 返回存储管理菜单
 async def st_return(client):
-    # sourcery skip: remove-unnecessary-cast, simplify-constant-sum, sum-comprehension
-    sl = storage_list()
-    sl_json = json.loads(sl.text)
-    zcc = len(sl_json['data']['content'])
-    content_list = sl_json["data"]["content"]
-    jysl = 0
-    for item in content_list:
-        if item["disabled"]:
-            jysl += 1
-    qysl = zcc - jysl
-    text = f'存储数量：{zcc}\n启用：{qysl}\n禁用：{jysl}'
     await client.edit_message_text(chat_id=storage_menu_button.chat.id,
                                    message_id=storage_menu_button.id,
-                                   text=text,
+                                   text=st_aaa(),
                                    reply_markup=InlineKeyboardMarkup(st_button))
 
 
@@ -258,7 +244,7 @@ async def st_close(client):
 
 # 发送 开关存储 按钮列表
 async def vs(client):
-    await get_storage(alist_host, alist_token, callback_data_pr='vs')
+    await get_storage(callback_data_pr='vs')
     button_list.insert(1, vs_all_button)
     button_list.insert(-1, vs_all_button)
     await client.edit_message_text(chat_id=storage_menu_button.chat.id,
@@ -269,7 +255,7 @@ async def vs(client):
 
 # 发送 复制存储 按钮列表
 async def cs(client):
-    await get_storage(alist_host, alist_token, callback_data_pr='cs')
+    await get_storage(callback_data_pr='cs')
     await client.edit_message_text(chat_id=storage_menu_button.chat.id,
                                    message_id=storage_menu_button.id,
                                    text='点击复制存储\n存储列表：',
@@ -278,7 +264,7 @@ async def cs(client):
 
 # 发送 删除存储 按钮列表
 async def ds(client):
-    await get_storage(alist_host, alist_token, callback_data_pr='ds')
+    await get_storage(callback_data_pr='ds')
     await client.edit_message_text(chat_id=storage_menu_button.chat.id,
                                    message_id=storage_menu_button.id,
                                    text='点击删除存储\n存储列表：',
@@ -310,7 +296,7 @@ async def ns(client):
 
 # 发送 复制存储配置 按钮列表
 async def st_storage_copy_list(client):
-    await get_storage(alist_host, alist_token, callback_data_pr='st_storage_copy_cfg')
+    await get_storage(callback_data_pr='st_storage_copy_cfg')
     await client.edit_message_text(chat_id=storage_menu_button.chat.id,
                                    message_id=storage_menu_button.id,
                                    text='点击复制存储配置：',
@@ -382,7 +368,7 @@ async def vs_callback(client, bvj):
     else:
         of_t = "❌已关闭存储："
         storage_disable(storage_id)
-    await get_storage(alist_host, alist_token, callback_data_pr='vs')
+    await get_storage(callback_data_pr='vs')
     button_list.insert(1, vs_all_button)
     button_list.insert(-1, vs_all_button)
     await client.edit_message_text(
@@ -405,7 +391,7 @@ async def vs_on_off_all(client, message, bvj):  # sourcery skip: use-contextlib-
     for i, is_disabled in enumerate(disabled):
 
         command(driver_id[i])
-        await get_storage(alist_host, alist_token, callback_data_pr='vs')
+        await get_storage(callback_data_pr='vs')
         button_list.insert(1, vs_all_button)
         button_list.insert(-1, vs_all_button)
         try:
@@ -444,7 +430,7 @@ async def cs_callback(client, bvj):
     body = cs_storage[0]
     storage_create(body)  # 新建存储
 
-    await get_storage(alist_host, alist_token, callback_data_pr='cs')
+    await get_storage(callback_data_pr='cs')
     await client.edit_message_text(
         chat_id=storage_menu_button.chat.id,
         message_id=storage_menu_button.id,
@@ -459,7 +445,7 @@ async def ds_callback(client, bvj):
     storage_id = driver_id[int(bvj)]
     storage_delete(storage_id)
     stid = mount_path[bvj]
-    await get_storage(alist_host, alist_token, callback_data_pr='ds')
+    await get_storage(callback_data_pr='ds')
     await client.edit_message_text(
         chat_id=storage_menu_button.chat.id,
         message_id=storage_menu_button.id,
@@ -721,16 +707,16 @@ async def ns_new_b_start(client, message):
             message_b.append(f'{mount_path} 添加失败！\n——————————\n{ns_alist_post.text}\n——————————')
         textt = f'{str(message_b[i])}\n'
         text += textt
-        ns_new_b_start = await client.edit_message_text(chat_id=message.message.chat.id,
-                                                        message_id=ns_b_message_tj.id,
-                                                        text=text,
-                                                        reply_markup=InlineKeyboardMarkup([
-                                                            [InlineKeyboardButton('↩️︎返回存储管理',
-                                                                                  callback_data='ns_re_new_b_menu')
-                                                             ]
-                                                        ]))
-        chat_data['ns_new_b_start_chat_id'] = ns_new_b_start.chat.id
-        chat_data['ns_new_b_start_message_id'] = ns_new_b_start.id
+        ns_new_bb_start = await client.edit_message_text(chat_id=message.message.chat.id,
+                                                         message_id=ns_b_message_tj.id,
+                                                         text=text,
+                                                         reply_markup=InlineKeyboardMarkup([
+                                                             [InlineKeyboardButton('↩️︎返回存储管理',
+                                                                                   callback_data='ns_re_new_b_menu')
+                                                              ]
+                                                         ]))
+        chat_data['ns_new_b_start_chat_id'] = ns_new_bb_start.chat.id
+        chat_data['ns_new_b_start_message_id'] = ns_new_bb_start.id
 
     ns_new_b_list.clear()
     message_text_list.clear()
@@ -820,7 +806,7 @@ async def st_storage_cfg_amend(client, message):
         else:
             t = translate_key(message_text, new_dict)
             t_d = {'storage': t}
-            write_config("../config/storage_cfg.yaml", t_d)
+            write_config("config/storage_cfg.yaml", t_d)
             await st_storage_amend(client)
 
 
@@ -854,7 +840,7 @@ async def user_cfg(message_text):  # sourcery skip: dict-assign-update-to-union
 
 
 # 获取存储并写入列表
-async def get_storage(alist_host, alist_token, callback_data_pr):
+async def get_storage(callback_data_pr):
     mount_path.clear()
     disabled.clear()
     driver_id.clear()
@@ -956,25 +942,11 @@ async def storage_config(driver_name):  # sourcery skip: swap-if-expression
 #####################################################################################
 #####################################################################################
 storage_handlers = [
-    MessageHandler(st,
-                   filters.command('st') & filters.private
-                   ),
-    MessageHandler(echo_storage,
-                   filters.text & filters.private
-                   ),
-    CallbackQueryHandler(
-        st_button_callback, filters.regex('^st')
-    ),
-    CallbackQueryHandler(
-        vs_button_callback, filters.regex(r'^vs')
-    ),
-    CallbackQueryHandler(
-        cs_button_callback, filters.regex(r'^cs')
-    ),
-    CallbackQueryHandler(
-        ds_button_callback, filters.regex(r'^ds')
-    ),
-    CallbackQueryHandler(
-        ns_button_callback, filters.regex(r'^ns')
-    )
+    MessageHandler(st, filters.command('st') & filters.private),
+    MessageHandler(echo_storage, (filters.text & filters.private) & ~filters.regex(r'^\/')),
+    CallbackQueryHandler(st_button_callback, filters.regex('^st')),
+    CallbackQueryHandler(vs_button_callback, filters.regex(r'^vs')),
+    CallbackQueryHandler(cs_button_callback, filters.regex(r'^cs')),
+    CallbackQueryHandler(ds_button_callback, filters.regex(r'^ds')),
+    CallbackQueryHandler(ns_button_callback, filters.regex(r'^ns'))
 ]

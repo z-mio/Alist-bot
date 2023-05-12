@@ -2,7 +2,6 @@
 import json
 import math
 import urllib.parse
-
 from pyrogram import filters
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
@@ -53,14 +52,22 @@ async def s(client, message):  # sourcery skip: low-code-quality
         # 搜索文件
         alist_post = search(s_str)
         alist_post_json = json.loads(alist_post.text)
+
         if not alist_post_json['data']['content']:
             await client.send_message(chat_id=message.chat.id, text="未搜索到文件，换个关键词试试吧")
         else:
+            result_deduplication = [
+                dict(t)
+                for t in {
+                    tuple(d.items())
+                    for d in alist_post_json['data']['content']
+                }
+            ]
             search1 = await client.send_message(chat_id=message.chat.id, text="搜索中...")
             # 文件/文件夹名字 文件/文件夹路径 文件大小 是否是文件夹
             name_list = parent_list = size_list = is_dir_list = []
             textx = []
-            for count, item in enumerate(alist_post_json['data']['content']):
+            for count, item in enumerate(result_deduplication):
                 name_list.append(item['name'])
                 parent_list.append(item['parent'])
                 size_list.append(item['size'])
