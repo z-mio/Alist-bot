@@ -349,8 +349,8 @@ async def cronjob_set(client, _):
         InlineKeyboardButton('❌关闭菜单', callback_data='cf_close'),
     ]
     text = f"""
-chat_id: <code>{",".join(list(map(str, cronjob()['chat_id'])))}</code>
-time: <code>{cronjob()['time']}</code>
+chat_id: <code>{",".join(list(map(str, cronjob()['chat_id']))) if cronjob()['chat_id'] else None}</code>
+time: <code>{cronjob()['time'] or None}</code>
 ——————————
 chat_id 可以填用户/群组/频道 id，支持多个,用英文逗号隔开
 
