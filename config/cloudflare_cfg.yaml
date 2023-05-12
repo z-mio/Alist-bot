@@ -1,0 +1,6 @@
+cronjob:
+  bandwidth_push: false
+  chat_id:
+  status_push: false
+  time: '50 23 * * *'
+node:
