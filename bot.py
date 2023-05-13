@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+
 import croniter
 import datetime
 import json
@@ -13,11 +14,12 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from pyrogram import Client, filters, enums
 from pyrogram.types import BotCommand
-from pyrogram.types import InlineKeyboardMarkup
 
 from api.alist_api import storage_list
 from config.config import (config, admin, alist_host, alist_token, backup_time, write_config, api_id, api_hash,
                            bot_token, scheme, hostname, port, cloudflare_cfg)
+from tool.scheduler_manager import aps
+from tool.translate_key import translate_key
 
 # 如果当前操作系统不是 Windows，则设置环境变量 TZ 为 'Asia/Shanghai'
 if platform.system() != 'Windows':
@@ -30,29 +32,29 @@ logging.basicConfig(
 )
 
 scheduler = AsyncIOScheduler()
-
 proxy = {
     "scheme": scheme,  # 支持“socks4”、“socks5”和“http”
     "hostname": hostname,
     "port": port
 }
 
+plugins = dict(root="module")
 if os.path.exists('my_bot.session'):
     app = (
-        Client("my_bot", proxy=proxy)
+        Client("my_bot", proxy=proxy, plugins=plugins)
         if scheme and hostname and port
-        else Client("my_bot")
+        else Client("my_bot", plugins=plugins)
     )
 elif scheme and hostname and port:
     app = Client(
         "my_bot", proxy=proxy,
         api_id=api_id, api_hash=api_hash,
-        bot_token=bot_token)
+        bot_token=bot_token, plugins=plugins)
 else:
     app = Client(
         "my_bot",
         api_id=api_id, api_hash=api_hash,
-        bot_token=bot_token)
+        bot_token=bot_token, plugins=plugins)
 app.set_parse_mode(enums.ParseMode.HTML)
 
 
@@ -60,13 +62,12 @@ app.set_parse_mode(enums.ParseMode.HTML)
 def admin_yz(func):
     async def wrapper(client, message, *args, **kwargs):
         user_id = message.from_user.id
-        query_user_id = getattr(message, "from_user", None)
-        query_user_id = query_user_id.id if query_user_id else 2023
-
-        if user_id == admin or query_user_id == admin:
+        if user_id == admin:
             return await func(client, message, *args, **kwargs)
-        else:
+        try:
             await client.send_message(chat_id=message.chat.id, text="该命令仅管理员可用")
+        except AttributeError:
+            await client.send_message(chat_id=message.message.chat.id, text="该命令仅管理员可用")
 
     return wrapper
 
@@ -195,25 +196,19 @@ async def set_backup_time(_, message):
 
         cron = croniter.croniter(backup_time(), datetime.datetime.now())
         next_run_time = cron.get_next(datetime.datetime)  # 下一次备份时间
-
-        if any(
-                job.id == 'send_backup_messages_regularly_id'
-                for job in scheduler.get_jobs()
-        ):  # 新建
-            Regular().new_scheduled_backup_task(recovery_send_backup_file, backup_time(),
-                                                'send_backup_messages_regularly_id')
-            text = f'已开启定时备份！\n下一次备份时间：{next_run_time}'
-        else:  # 修改
-            Regular().modify_scheduled_backup_task(backup_time(), 'send_backup_messages_regularly_id')
+        if aps.job_exists('send_backup_messages_regularly_id'):
+            aps.modify_job(job_id='send_backup_messages_regularly_id',
+                           trigger=CronTrigger.from_crontab(backup_time()))
             text = f'修改成功！\n下一次备份时间：{next_run_time}'
-        await app.send_message(chat_id=message.chat.id,
-                               text=text)
-
+        else:
+            aps.add_job(func=recovery_send_backup_file, trigger=CronTrigger.from_crontab(backup_time()),
+                        job_id='send_backup_messages_regularly_id')
+            text = f'已开启定时备份！\n下一次备份时间：{next_run_time}'
+        await app.send_message(chat_id=message.chat.id, text=text)
     elif mtime == '0':
         config['bot']['backup_time'] = mtime
         write_config('config/config.yaml', config)
-        if scheduler.get_jobs():
-            Regular().disable_scheduled_backup_task('send_backup_messages_regularly_id')
+        aps.pause_job('send_backup_messages_regularly_id')
         await app.send_message(chat_id=message.chat.id, text='已关闭定时备份')
     elif not mtime:
         text = '''格式：/sbt + 5位cron表达式，0为关闭
@@ -238,105 +233,26 @@ async def set_backup_time(_, message):
         await app.send_message(chat_id=message.chat.id, text='格式错误')
 
 
-class Regular:
-
-    # 新建定时备份任务
-    @staticmethod
-    def new_scheduled_backup_task(func, rtime, tid):
-        scheduler.add_job(func, trigger=CronTrigger.from_crontab(rtime),
-                          id=tid)
-
-
-    # 修改定时备份任务
-    @staticmethod
-    def modify_scheduled_backup_task(rtime, tid):
-        scheduler.reschedule_job(tid,
-                                 trigger=CronTrigger.from_crontab(rtime))
-
-    # 暂停定时备份任务
-    @staticmethod
-    def disable_scheduled_backup_task(tid):
-        scheduler.pause_job(tid)
-
-
-# 带宽通知
-async def send_cronjob_bandwidth_push():
-    import module.cloudflare
-    vv = module.cloudflare.vvv(0)
-    for i in cloudflare_cfg['cronjob']['chat_id']:
-        await app.send_message(chat_id=i,
-                               text=vv[0],
-                               reply_markup=InlineKeyboardMarkup(vv[1]))
-
-
 #####################################################################################
 
 #####################################################################################
 
-
-# 列表/字典key翻译，输入：待翻译列表/字典，翻译字典 输出：翻译后的列表/字典
-def translate_key(list_or_dict, translation_dict):  # sourcery skip: assign-if-exp
-    if isinstance(list_or_dict, dict):
-        def translate_zh(_key):
-            translate_dict = translation_dict
-            # 如果翻译字典里有当前的key，就返回对应的中文字符串
-            if _key in translate_dict:
-                return translate_dict[_key]
-            # 如果翻译字典里没有当前的key，就返回原字符串
-            else:
-                return _key
-
-        new_dict_or_list = {}  # 存放翻译后key的字典
-        # 遍历原字典里所有的键值对
-        for key, value in list_or_dict.items():
-            # 如果当前的值还是字典，就递归调用自身
-            if isinstance(value, dict):
-                new_dict_or_list[translate_zh(key)] = translate_key(value, translation_dict)
-            # 如果当前的值不是字典，就把当前的key翻译成中文，然后存到新的字典里
-            else:
-                new_dict_or_list[translate_zh(key)] = value
-    else:
-        new_dict_or_list = []
-        for index, value in enumerate(list_or_dict):
-            if value in translation_dict.keys():
-                new_dict_or_list.append(translation_dict[value])
-            else:
-                new_dict_or_list.append(value)
-    return new_dict_or_list
-
-
-# try
-def handle_exception(func):
-    async def wrapper(*args, **kwargs):
-        try:
-            return await func(*args, **kwargs)
-        except Exception as e:
-            logging.error(e)
-
-    return wrapper
-
-
-#####################################################################################
-#####################################################################################
 
 # bot重启后要恢复的任务
 def recovery_task():
+    from module.cloudflare import send_cronjob_bandwidth_push
     # Alist配置定时备份
-    def alist_config_timed_backup():
-        if backup_time() != '0':
-            logging.info('定时备份已启动')
-            Regular().new_scheduled_backup_task(recovery_send_backup_file, backup_time(),
-                                                'send_backup_messages_regularly_id')
+    if backup_time() != '0':
+        aps.add_job(func=recovery_send_backup_file, trigger=CronTrigger.from_crontab(backup_time()),
+                    job_id='send_backup_messages_regularly_id')
+        logging.info('定时备份已启动')
 
-    def cloudflare_cronjob():
-        if cloudflare_cfg['cronjob']['bandwidth_push']:
-            Regular().new_scheduled_backup_task(send_cronjob_bandwidth_push, cloudflare_cfg['cronjob']['time'],
-                                                'cronjob_bandwidth_push')
+    if cloudflare_cfg['cronjob']['bandwidth_push']:
+        aps.add_job(func=send_cronjob_bandwidth_push, args=[app],
+                    trigger=CronTrigger.from_crontab(cloudflare_cfg['cronjob']['time']),
+                    job_id='cronjob_bandwidth_push')
+        logging.info('带宽通知已启动')
 
-    # 运行
-    alist_config_timed_backup()
-    cloudflare_cronjob()
-    scheduler.start()
 
 # bot启动时验证
 def examine():
@@ -357,19 +273,7 @@ def examine():
             exit()
 
 
-def start_bot():
-    from module.search import search_handlers
-    from module.storage import storage_handlers
-    from module.image import image_handlers
-    from module.cloudflare import cloudflare_handlers
-
-    [app.add_handler(handler) for handler in
-     search_handlers + cloudflare_handlers + storage_handlers + image_handlers]
-
-    app.run()
-
-
 if __name__ == '__main__':
     examine()
     recovery_task()
-    start_bot()
+    app.run()

@@ -6,15 +6,13 @@ import json
 import os
 import random
 import time
-
-from pyrogram import filters
-from pyrogram.handlers import MessageHandler
+from pyrogram import filters, Client
 
 from api.alist_api import upload, fs_get, refresh_list
 from bot import admin_yz
 from config.config import image_upload_path, image_save_path, alist_web, image_config, write_config
 
-# 5线程
+# 4线程
 thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 
@@ -82,6 +80,7 @@ Markdown：
     await client.edit_message_text(chat_id=msg.chat.id, message_id=msg.id, text=text)
 
 
+@Client.on_message((filters.photo | filters.document) & filters.private)
 @admin_yz
 async def single_mode(client, message):
     # 检测是否添加了说明
@@ -122,8 +121,3 @@ async def single_mode(client, message):
 设置后会自动保存，不用每次都设置
 '''
         await client.send_message(chat_id=message.chat.id, text=text)
-
-
-image_handlers = [
-    MessageHandler(single_mode, (filters.photo | filters.document) & filters.private)
-]

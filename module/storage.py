@@ -5,14 +5,14 @@ import logging
 import pyrogram
 import re
 import requests
-from pyrogram import filters
-from pyrogram.handlers import MessageHandler, CallbackQueryHandler
+from pyrogram import filters, Client
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from api.alist_api import (storage_update, storage_create, storage_list, storage_get, storage_delete, storage_disable,
                            storage_enable)
-from bot import translate_key, admin_yz
+from bot import admin_yz
 from config.config import storage_cfg, write_config, chat_data
+from tool.translate_key import translate_key
 
 mount_path = []  # 存储路径
 disabled = []  # 存储是否禁用
@@ -71,6 +71,7 @@ vs_all_button = [
 
 
 # 存储管理菜单 按钮回调
+@Client.on_callback_query(filters.regex(r'^st'))
 @admin_yz
 async def st_button_callback(client, message):
     query = message.data
@@ -106,7 +107,7 @@ async def st_button_callback(client, message):
 
 
 # 开关存储 按钮回调
-
+@Client.on_callback_query(filters.regex('^vs'))
 async def vs_button_callback(client, message):
     # sourcery skip: merge-comparisons, merge-duplicate-blocks, remove-redundant-if
     query = message.data
@@ -121,7 +122,7 @@ async def vs_button_callback(client, message):
 
 
 # 复制存储 按钮回调
-
+@Client.on_callback_query(filters.regex('^cs'))
 async def cs_button_callback(client, message):
     query = message.data
     bvj = query
@@ -130,7 +131,7 @@ async def cs_button_callback(client, message):
 
 
 # 删除存储 按钮回调
-
+@Client.on_callback_query(filters.regex('^ds'))
 async def ds_button_callback(client, message):
     query = message.data
     bvj = query
@@ -139,7 +140,7 @@ async def ds_button_callback(client, message):
 
 
 # 新建存储 按钮回调
-
+@Client.on_callback_query(filters.regex('^ns'))
 async def ns_button_callback(client, message):
     query = message.data
     bvj = query
@@ -181,6 +182,7 @@ async def ns_button_callback(client, message):
 #####################################################################################
 
 # 检测普通消息
+@Client.on_message((filters.text & filters.private) & ~filters.regex(r'^\/'))
 async def echo_storage(client, message):
     if "ns_a" in chat_data and chat_data["ns_a"]:
         chat_data["ns_a"] = False
@@ -214,6 +216,7 @@ def st_aaa():
 
 
 # 存储管理菜单
+@Client.on_message(filters.command('st') & filters.private)
 @admin_yz
 async def st(client, message):
     chat_data['storage_menu_button'] = await client.send_message(
@@ -937,16 +940,3 @@ async def storage_config(driver_name):  # sourcery skip: swap-if-expression
     text = "".join(default_storage_config_message)
 
     return text, common_dict_json
-
-
-#####################################################################################
-#####################################################################################
-storage_handlers = [
-    MessageHandler(st, filters.command('st') & filters.private),
-    MessageHandler(echo_storage, (filters.text & filters.private) & ~filters.regex(r'^\/')),
-    CallbackQueryHandler(st_button_callback, filters.regex('^st')),
-    CallbackQueryHandler(vs_button_callback, filters.regex(r'^vs')),
-    CallbackQueryHandler(cs_button_callback, filters.regex(r'^cs')),
-    CallbackQueryHandler(ds_button_callback, filters.regex(r'^ds')),
-    CallbackQueryHandler(ns_button_callback, filters.regex(r'^ns'))
-]
