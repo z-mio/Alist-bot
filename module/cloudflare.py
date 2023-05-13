@@ -9,7 +9,7 @@ from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from api.cloudflare_api import list_zones, list_filters, graphql_api
-from bot import handle_exception, Regular, scheduler, send_cronjob_bandwidth_push
+from bot import handle_exception, Regular, scheduler, send_cronjob_bandwidth_push, admin_yz
 from config.config import nodee, cronjob, cloudflare_cfg, chat_data, write_config
 from module.search import pybyte
 
@@ -130,6 +130,7 @@ def cf_aaa():
 
 
 # cf菜单
+@admin_yz
 async def cf_menu(client, message):
     chat_data['cf_menu_button'] = await client.send_message(chat_id=message.chat.id,
                                                             text=cf_aaa(),
