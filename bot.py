@@ -245,7 +245,7 @@ class Regular:
     def new_scheduled_backup_task(func, rtime, tid):
         scheduler.add_job(func, trigger=CronTrigger.from_crontab(rtime),
                           id=tid)
-        scheduler.start()
+
 
     # 修改定时备份任务
     @staticmethod
@@ -261,8 +261,8 @@ class Regular:
 
 # 带宽通知
 async def send_cronjob_bandwidth_push():
-    from module.cloudflare import vvv
-    vv = vvv(0)
+    import module.cloudflare
+    vv = module.cloudflare.vvv(0)
     for i in cloudflare_cfg['cronjob']['chat_id']:
         await app.send_message(chat_id=i,
                                text=vv[0],
@@ -336,7 +336,7 @@ def recovery_task():
     # 运行
     alist_config_timed_backup()
     cloudflare_cronjob()
-
+    scheduler.start()
 
 # bot启动时验证
 def examine():
