@@ -247,7 +247,8 @@ async def view_bandwidth(client, message):
     chat_data['node_status_day'] = day
     vv = get_node_status(day)
     state = '🔼点击展开🔼' if chat_data['packUp'] else '🔽点击收起🔽'
-    button = [InlineKeyboardButton(state, callback_data='gns_expansion')]
+    button = [InlineKeyboardButton(state, callback_data='gns_expansion') if 'packUp' in chat_data and chat_data[
+        'packUp'] else None]
     text = cf_aaa() if 'packUp' in chat_data and chat_data['packUp'] else vv[0]
     button = [button, vv[2], vv[3]] if 'packUp' in chat_data and chat_data['packUp'] else [button, vv[1], vv[2], vv[3]]
     await client.edit_message_text(chat_id=a.chat.id,
@@ -262,6 +263,8 @@ async def view_bandwidth_button(client, message, day):
     state = '🔼点击展开🔼' if chat_data['packUp'] else '🔽点击收起🔽'
     ab = [InlineKeyboardButton(state, callback_data='gns_expansion')]
     button = [ab, bandwidth_button_a, bandwidth_button_b, bandwidth_button_c]
+    if 'packUp' in chat_data and chat_data['packUp']:
+        button = [ab, bandwidth_button_b, bandwidth_button_c]
     await client.edit_message_text(chat_id=chat_id,
                                    message_id=message_id,
                                    text='检测节点中...',
