@@ -33,6 +33,25 @@ cf_menu_button = [
         InlineKeyboardButton('❌关闭菜单', callback_data='cf_close'),
     ]]
 
+bandwidth_button_a = [
+    InlineKeyboardButton('🟢---', callback_data='gns_total_bandwidth'),
+    InlineKeyboardButton('🔴---', callback_data='gns_total_bandwidth'),
+    InlineKeyboardButton('⭕️---', callback_data='gns_total_bandwidth'),
+]
+bandwidth_button_b = [
+    InlineKeyboardButton(
+        '📈总请求：---', callback_data='gns_total_bandwidth'
+    ),
+    InlineKeyboardButton(
+        '📊总带宽：---', callback_data='gns_total_bandwidth'
+    ),
+]
+bandwidth_button_c = [
+    InlineKeyboardButton('🔙上一天', callback_data='gns_status_up'),
+    InlineKeyboardButton('📅---', callback_data='gns_status_calendar'),
+    InlineKeyboardButton('🔜下一天', callback_data='gns_status_down'),
+]
+
 
 #####################################################################################
 #####################################################################################
@@ -66,21 +85,25 @@ async def cf_button_callback(client, message):
 async def node_status(client, message):
     query = message.data
     if chat_data['node_status_mode'] == 'menu':
-        if query == 'gns_status_up':
-            chat_data['node_status_day'] -= 1
-            await send_node_status(client, message, chat_data['node_status_day'])
-        elif query == 'gns_status_down':
+        if query == 'gns_status_down':
             if 'node_status_day' in chat_data and chat_data['node_status_day']:
                 chat_data['node_status_day'] += 1
                 await send_node_status(client, message, chat_data['node_status_day'])
-    elif chat_data['node_status_mode'] == 'command':
-        if query == 'gns_status_up':
+        elif query == 'gns_status_up':
             chat_data['node_status_day'] -= 1
-            await view_bandwidth_callback(client, message, chat_data['node_status_day'])
+            await send_node_status(client, message, chat_data['node_status_day'])
+    elif chat_data['node_status_mode'] == 'command':
+        if query == 'gns_expansion':
+            chat_data['packUp'] = not chat_data['packUp']
+            await view_bandwidth_button(client, message, chat_data['node_status_day'])
         elif query == 'gns_status_down':
             if 'node_status_day' in chat_data and chat_data['node_status_day']:
                 chat_data['node_status_day'] += 1
-                await view_bandwidth_callback(client, message, chat_data['node_status_day'])
+                await view_bandwidth_button(client, message, chat_data['node_status_day'])
+
+        elif query == 'gns_status_up':
+            chat_data['node_status_day'] -= 1
+            await view_bandwidth_button(client, message, chat_data['node_status_day'])
 
 
 # 通知设置菜单按钮回调
@@ -188,45 +211,25 @@ def get_node_info(url, email, key, zone_id, day):
     return text, byte, code, request
 
 
-# 发送节点状态
+# 菜单中的节点状态
 @handle_exception
 @admin_yz
 async def send_node_status(client, message, day):
     chat_id, message_id = message.message.chat.id, message.message.id
     chat_data['node_status_mode'] = 'menu'
-    button = [
-        [
-            InlineKeyboardButton('🟢---', callback_data='gns_total_bandwidth'),
-            InlineKeyboardButton('🔴---', callback_data='gns_total_bandwidth'),
-            InlineKeyboardButton('⭕️---', callback_data='gns_total_bandwidth'),
-        ],
-        [
-            InlineKeyboardButton(
-                '总请求：---', callback_data='gns_total_bandwidth'
-            ),
-            InlineKeyboardButton(
-                '总带宽：---', callback_data='gns_total_bandwidth'
-            ),
-        ],
-        [
-            InlineKeyboardButton('上一天', callback_data='gns_status_up'),
-            InlineKeyboardButton('---', callback_data='gns_status_calendar'),
-            InlineKeyboardButton('下一天', callback_data='gns_status_down'),
-        ],
-        return_button,
-    ]
 
+    button = [bandwidth_button_a, bandwidth_button_b, bandwidth_button_c, return_button]
     await client.edit_message_text(chat_id=chat_id,
                                    message_id=message_id,
                                    text='检测节点中...',
                                    reply_markup=InlineKeyboardMarkup(button)
                                    )
-    v = get_node_status(day)
-    a = v[1]
-    a.append(return_button)
+    vv = get_node_status(day)
+    a = [vv[1], vv[2], vv[3], return_button]
+
     await client.edit_message_text(chat_id=chat_id,
                                    message_id=message_id,
-                                   text=v[0],
+                                   text=vv[0],
                                    reply_markup=InlineKeyboardMarkup(a)
                                    )
 
@@ -236,54 +239,42 @@ async def send_node_status(client, message, day):
 @handle_exception
 async def view_bandwidth(client, message):
     chat_data['node_status_mode'] = 'command'
-
+    chat_data['packUp'] = True
     a = await client.send_message(chat_id=message.chat.id,
                                   text='检测节点中...')
 
     day = int(message.command[1]) if message.command[1:] else 0
     chat_data['node_status_day'] = day
     vv = get_node_status(day)
-
+    state = '🔼点击展开🔼' if chat_data['packUp'] else '🔽点击收起🔽'
+    button = [InlineKeyboardButton(state, callback_data='gns_expansion')]
+    text = cf_aaa() if 'packUp' in chat_data and chat_data['packUp'] else vv[0]
+    button = [button, vv[2], vv[3]] if 'packUp' in chat_data and chat_data['packUp'] else [button, vv[1], vv[2], vv[3]]
     await client.edit_message_text(chat_id=a.chat.id,
                                    message_id=a.id,
-                                   text=vv[0],
-                                   reply_markup=InlineKeyboardMarkup(vv[1]))
+                                   text=text,
+                                   reply_markup=InlineKeyboardMarkup(button))
 
 
-async def view_bandwidth_callback(client, message, day):
+# view_bandwidth按钮
+async def view_bandwidth_button(client, message, day):
     chat_id, message_id = message.message.chat.id, message.message.id
-    button = [
-        [
-            InlineKeyboardButton('🟢---', callback_data='gns_total_bandwidth'),
-            InlineKeyboardButton('🔴---', callback_data='gns_total_bandwidth'),
-            InlineKeyboardButton('⭕️---', callback_data='gns_total_bandwidth'),
-        ],
-        [
-            InlineKeyboardButton(
-                '总请求：---', callback_data='gns_total_bandwidth'
-            ),
-            InlineKeyboardButton(
-                '总带宽：---', callback_data='gns_total_bandwidth'
-            ),
-        ],
-        [
-            InlineKeyboardButton('上一天', callback_data='gns_status_up'),
-            InlineKeyboardButton('---', callback_data='gns_status_calendar'),
-            InlineKeyboardButton('下一天', callback_data='gns_status_down'),
-        ]
-    ]
+    state = '🔼点击展开🔼' if chat_data['packUp'] else '🔽点击收起🔽'
+    ab = [InlineKeyboardButton(state, callback_data='gns_expansion')]
+    button = [ab, bandwidth_button_a, bandwidth_button_b, bandwidth_button_c]
     await client.edit_message_text(chat_id=chat_id,
                                    message_id=message_id,
                                    text='检测节点中...',
                                    reply_markup=InlineKeyboardMarkup(button)
                                    )
-
     vv = get_node_status(day)
-    await client.edit_message_text(chat_id=chat_id, message_id=message_id, text=vv[0],
-                                   reply_markup=InlineKeyboardMarkup(vv[1]))
+    text = cf_aaa() if 'packUp' in chat_data and chat_data['packUp'] else vv[0]
+    button = [ab, vv[2], vv[3]] if 'packUp' in chat_data and chat_data['packUp'] else [ab, vv[1], vv[2], vv[3]]
+    await client.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
+                                   reply_markup=InlineKeyboardMarkup(button))
 
 
-# 使用指令 获取节点状态
+# 获取节点状态
 def get_node_status(s):
     d = date_shift(int(s))
     node_list = nodee()
@@ -312,25 +303,33 @@ def get_node_status(s):
     code = [i[2] for i in results]
     request = f'{int(sum(i[3] for i in results) / 10000)}W'
 
-    button = [
-        [
-            InlineKeyboardButton(f'🟢{code.count("🟢")}', callback_data='gns_total_bandwidth'),
-            InlineKeyboardButton(f'🔴{code.count("🔴")}', callback_data='gns_total_bandwidth'),
-            InlineKeyboardButton(f'⭕️{code.count("⭕️")}', callback_data='gns_total_bandwidth'),
-
-        ],
-        [
-            InlineKeyboardButton(f'总请求：{request}', callback_data='gns_total_bandwidth'),
-            InlineKeyboardButton(f'总带宽：{pybyte(total_bandwidth)}', callback_data='gns_total_bandwidth'),
-        ],
-        [
-            InlineKeyboardButton('上一天', callback_data='gns_status_up'),
-            InlineKeyboardButton(d[0], callback_data='gns_status_calendar'),
-            InlineKeyboardButton('下一天', callback_data='gns_status_down')
-        ]
+    button_b = [
+        InlineKeyboardButton(
+            f'🟢{code.count("🟢")}', callback_data='gns_total_bandwidth'
+        ),
+        InlineKeyboardButton(
+            f'🔴{code.count("🔴")}', callback_data='gns_total_bandwidth'
+        ),
+        InlineKeyboardButton(
+            f'⭕️{code.count("⭕️")}', callback_data='gns_total_bandwidth'
+        ),
+    ]
+    button_c = [
+        InlineKeyboardButton(
+            f'📊总请求：{request}', callback_data='gns_total_bandwidth'
+        ),
+        InlineKeyboardButton(
+            f'📈总带宽：{pybyte(total_bandwidth)}',
+            callback_data='gns_total_bandwidth',
+        ),
+    ]
+    button_d = [
+        InlineKeyboardButton('🔙上一天', callback_data='gns_status_up'),
+        InlineKeyboardButton(f'📅{d[0]}', callback_data='gns_status_calendar'),
+        InlineKeyboardButton('🔜下一天', callback_data='gns_status_down'),
     ]
 
-    return ''.join(text), button
+    return ''.join(text), button_b, button_c, button_d
 
 
 # 账号管理
@@ -495,7 +494,7 @@ async def send_cronjob_bandwidth_push(app):
     for i in cloudflare_cfg['cronjob']['chat_id']:
         await app.send_message(chat_id=i,
                                text=vv[0],
-                               reply_markup=InlineKeyboardMarkup(vv[1]))
+                               reply_markup=InlineKeyboardMarkup([vv[1], vv[2], vv[3]]))
 
 
 #####################################################################################
