@@ -49,7 +49,7 @@ bandwidth_button_b = [
 bandwidth_button_c = [
     InlineKeyboardButton('🔙上一天', callback_data='gns_status_up'),
     InlineKeyboardButton('---', callback_data='gns_status_calendar'),
-    InlineKeyboardButton('🔜下一天', callback_data='gns_status_down'),
+    InlineKeyboardButton('下一天🔜', callback_data='gns_status_down'),
 ]
 
 
@@ -329,7 +329,7 @@ def get_node_status(s):
     button_d = [
         InlineKeyboardButton('🔙上一天', callback_data='gns_status_up'),
         InlineKeyboardButton({d[0]}, callback_data='gns_status_calendar'),
-        InlineKeyboardButton('🔜下一天', callback_data='gns_status_down'),
+        InlineKeyboardButton('下一天🔜', callback_data='gns_status_down'),
     ]
 
     return ''.join(text), button_b, button_c, button_d
