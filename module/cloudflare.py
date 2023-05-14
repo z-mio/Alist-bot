@@ -493,11 +493,13 @@ async def cronjob_set_edit(client, message):
 
 # 带宽通知定时任务
 async def send_cronjob_bandwidth_push(app):
+    chat_data['packUp'] = True
     vv = get_node_status(0)
+    text = '今日流量统计'
     for i in cloudflare_cfg['cronjob']['chat_id']:
         await app.send_message(chat_id=i,
-                               text=vv[0],
-                               reply_markup=InlineKeyboardMarkup([vv[1], vv[2], vv[3]]))
+                               text=text,
+                               reply_markup=InlineKeyboardMarkup([vv[1], vv[2]]))
 
 
 #####################################################################################
