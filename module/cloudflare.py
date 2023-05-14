@@ -328,7 +328,7 @@ def get_node_status(s):
     ]
     button_d = [
         InlineKeyboardButton('🔙上一天', callback_data='gns_status_up'),
-        InlineKeyboardButton({d[0]}, callback_data='gns_status_calendar'),
+        InlineKeyboardButton(d[0], callback_data='gns_status_calendar'),
         InlineKeyboardButton('下一天🔜', callback_data='gns_status_down'),
     ]
 
