@@ -154,11 +154,11 @@ def cf_aaa():
 @Client.on_message(filters.command('sf') & filters.private)
 @admin_yz
 async def cf_menu(client, message):
-    aa = await client.send_message(chat_id=message.chat.id,
-                                   text='检测节点中...',
-                                   reply_markup=InlineKeyboardMarkup(cf_menu_button))
-    await client.edit_message_text(chat_id=aa.chat.id,
-                                   message_id=aa.id,
+    chat_data['cf_menu'] = await client.send_message(chat_id=message.chat.id,
+                                                     text='检测节点中...',
+                                                     reply_markup=InlineKeyboardMarkup(cf_menu_button))
+    await client.edit_message_text(chat_id=chat_data['cf_menu'].chat.id,
+                                   message_id=chat_data['cf_menu'].id,
                                    text=cf_aaa(),
                                    reply_markup=InlineKeyboardMarkup(cf_menu_button))
 
@@ -472,7 +472,7 @@ chat_id 和 time 一行一个，例：
 
 # 通知设置
 async def cronjob_set_edit(client, message):
-    chat_id, message_id = message.message.chat.id, message.message.id
+    chat_id, message_id = chat_data['cf_menu'].chat.id, chat_data['cf_menu'].id
     d = message.text
     dd = d.split('\n')
     cloudflare_cfg['cronjob']['chat_id'] = [int(x) for x in dd[0].split(',')]
