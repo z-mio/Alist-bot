@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+import asyncio
 import concurrent.futures
 import contextlib
 import datetime
@@ -52,6 +53,9 @@ bandwidth_button_c = [
     InlineKeyboardButton('下一天🔜', callback_data='gns_status_down'),
 ]
 
+# 获取节点状态线程池
+thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=20)
+
 
 #####################################################################################
 #####################################################################################
@@ -95,15 +99,14 @@ async def node_status(client, message):
     elif chat_data['node_status_mode'] == 'command':
         if query == 'gns_expansion':
             chat_data['packUp'] = not chat_data['packUp']
-            await view_bandwidth_button(client, message, chat_data['node_status_day'])
+            thread_pool.submit(asyncio.run, view_bandwidth_button(client, message, chat_data['node_status_day']))
         elif query == 'gns_status_down':
             if 'node_status_day' in chat_data and chat_data['node_status_day']:
                 chat_data['node_status_day'] += 1
-                await view_bandwidth_button(client, message, chat_data['node_status_day'])
-
+                thread_pool.submit(asyncio.run, view_bandwidth_button(client, message, chat_data['node_status_day']))
         elif query == 'gns_status_up':
             chat_data['node_status_day'] -= 1
-            await view_bandwidth_button(client, message, chat_data['node_status_day'])
+            thread_pool.submit(asyncio.run, view_bandwidth_button(client, message, chat_data['node_status_day']))
 
 
 # 通知设置菜单按钮回调
@@ -238,23 +241,27 @@ async def send_node_status(client, message, day):
 @Client.on_message(filters.command('vb'))
 @handle_exception
 async def view_bandwidth(client, message):
-    chat_data['node_status_mode'] = 'command'
-    chat_data['packUp'] = True
-    a = await client.send_message(chat_id=message.chat.id,
-                                  text='检测节点中...')
+    async def view_bandwidth_a(client_a, message_a):
+        chat_data['node_status_mode'] = 'command'
+        chat_data['packUp'] = True
+        a = await client_a.send_message(chat_id=message_a.chat.id,
+                                        text='检测节点中...')
 
-    day = int(message.command[1]) if message.command[1:] else 0
-    chat_data['node_status_day'] = day
-    vv = get_node_status(day)
-    state = '🔼点击展开🔼' if chat_data['packUp'] else '🔽点击收起🔽'
-    button = [InlineKeyboardButton(state, callback_data='gns_expansion') if 'packUp' in chat_data and chat_data[
-        'packUp'] else None]
-    text = cf_aaa() if 'packUp' in chat_data and chat_data['packUp'] else vv[0]
-    button = [button, vv[2], vv[3]] if 'packUp' in chat_data and chat_data['packUp'] else [button, vv[1], vv[2], vv[3]]
-    await client.edit_message_text(chat_id=a.chat.id,
-                                   message_id=a.id,
-                                   text=text,
-                                   reply_markup=InlineKeyboardMarkup(button))
+        day = int(message_a.command[1]) if message_a.command[1:] else 0
+        chat_data['node_status_day'] = day
+        vv = get_node_status(day)
+        state = '🔼点击展开🔼' if chat_data['packUp'] else '🔽点击收起🔽'
+        button = [InlineKeyboardButton(state, callback_data='gns_expansion') if 'packUp' in chat_data and chat_data[
+            'packUp'] else None]
+        text = cf_aaa() if 'packUp' in chat_data and chat_data['packUp'] else vv[0]
+        button = [button, vv[2], vv[3]] if 'packUp' in chat_data and chat_data['packUp'] else [button, vv[1], vv[2],
+                                                                                               vv[3]]
+        await client_a.edit_message_text(chat_id=a.chat.id,
+                                         message_id=a.id,
+                                         text=text,
+                                         reply_markup=InlineKeyboardMarkup(button))
+
+    thread_pool.submit(asyncio.run, view_bandwidth_a(client, message))
 
 
 # view_bandwidth按钮
