@@ -253,7 +253,7 @@ async def view_bandwidth(client, message):
         state = '🔼点击展开🔼' if chat_data['packUp'] else '🔽点击收起🔽'
         button = [InlineKeyboardButton(state, callback_data='gns_expansion') if 'packUp' in chat_data and chat_data[
             'packUp'] else None]
-        text = cf_aaa() if 'packUp' in chat_data and chat_data['packUp'] else vv[0]
+        text = vv[0]
         button = [button, vv[2], vv[3]] if 'packUp' in chat_data and chat_data['packUp'] else [button, vv[1], vv[2],
                                                                                                vv[3]]
         await client_a.edit_message_text(chat_id=a.chat.id,
@@ -278,7 +278,8 @@ async def view_bandwidth_button(client, message, day):
                                    reply_markup=InlineKeyboardMarkup(button)
                                    )
     vv = get_node_status(day)
-    text = cf_aaa() if 'packUp' in chat_data and chat_data['packUp'] else vv[0]
+    text = vv[0]
+
     button = [ab, vv[2], vv[3]] if 'packUp' in chat_data and chat_data['packUp'] else [ab, vv[1], vv[2], vv[3]]
     await client.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
                                    reply_markup=InlineKeyboardMarkup(button))
@@ -309,9 +310,17 @@ def get_node_status(s):
         chat_data['node_status_day'] -= 1
     text = [i[0] for i in results]
     text.sort(key=lambda x: x.split(' |')[0])
+    text = ''.join(text)
     total_bandwidth = sum(i[1] for i in results)
     code = [i[2] for i in results]
     request = f'{int(sum(i[3] for i in results) / 10000)}W'
+
+    text = f'''
+节点数量：{len(code)}
+🟢  正常：{code.count("🟢")}
+🔴  失效：{code.count("🔴")}
+⭕️  错误：{code.count("⭕️")}
+    ''' if 'packUp' in chat_data and chat_data['packUp'] else text
 
     button_b = [
         InlineKeyboardButton(
@@ -339,7 +348,7 @@ def get_node_status(s):
         InlineKeyboardButton('下一天🔜', callback_data='gns_status_down'),
     ]
 
-    return ''.join(text), button_b, button_c, button_d
+    return ''.join(text), button_b, button_c, button_d, code
 
 
 # 账号管理
@@ -468,8 +477,6 @@ time 为带宽通知时间，格式为5位cron表达式
 chat_id 和 time 一行一个，例：
 <code>123123,321321
 0 24 * * *</code>
-
-
 """
 
     await client.edit_message_text(chat_id=chat_id,

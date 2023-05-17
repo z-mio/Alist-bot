@@ -428,7 +428,7 @@ async def cs_callback(client, bvj):
         cs_mount_path_text = re.sub('.balance.*', '', cs_mount_path)
         cs_storage[0]['mount_path'] = f'{cs_mount_path_text}.balance{current_time}'
     cs_storage[0]['order'] = cs_order + 1  # 基于当前配置的排序加1
-    cs_storage[0]['remark'] = f"{mount_path[bvj]} -> {cs_storage[0]['mount_path']}\n{cs_storage[0]['remark']}"
+    # cs_storage[0]['remark'] = f"{mount_path[bvj]} -> {cs_storage[0]['mount_path']}\n{cs_storage[0]['remark']}"
 
     body = cs_storage[0]
     storage_create(body)  # 新建存储
