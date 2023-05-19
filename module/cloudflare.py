@@ -558,22 +558,30 @@ async def send_cronjob_status_push(app):
         results = [future.result() for future in concurrent.futures.wait(futures).done]
 
         for node, result in results:
+            if node not in chat_data:
+                chat_data[node] = result
+                chat_data[f'{node}_count'] = 0
+
             if result == 200:
                 text_a = f'🟢{node}|节点已恢复'
             elif result == 429:
                 text_a = f'🔴{node}|节点请求数耗尽'
+                chat_data[f'{node}_count'] += 1
             else:
                 text_a = f'⭕️{node}|节点异常'
+                chat_data[f'{node}_count'] += 1
 
-            if node not in chat_data:
-                chat_data[node] = result
+            if result != 200 and 0 < chat_data[f'{node}_count'] <= 3:
+                break
 
             if result != chat_data[node]:
+                chat_data[f'{node}_count'] = 0
                 # 状态通知
                 if cloudflare_cfg['cronjob']['status_push']:
                     chat_data[node] = result
                     for i in cloudflare_cfg['cronjob']['chat_id']:
                         await app.send_message(chat_id=i, text=text_a)
+
                 # 存储管理
                 if cloudflare_cfg['cronjob']['storage_mgmt']:
                     chat_data[node] = result
