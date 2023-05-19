@@ -278,6 +278,7 @@ async def send_node_status(client, message, day):
     chat_id, message_id = message.message.chat.id, message.message.id
     chat_data['node_status_mode'] = 'menu'
     chat_data['node_status_expand'] = False
+    chat_data['packUp'] = False
     button = [bandwidth_button_a, bandwidth_button_b, bandwidth_button_c, return_button]
     await client.edit_message_text(chat_id=chat_id,
                                    message_id=message_id,
@@ -378,7 +379,7 @@ def get_node_status(s):
 🟢  正常：{code.count('🟢')}
 🔴  失效：{code.count('🔴')}
 ⭕️  错误：{code.count('⭕️')}
-    ''' if 'packUp' in chat_data and chat_data['packUp'] and chat_data['node_status_expand'] else text
+    ''' if 'packUp' in chat_data and chat_data['packUp'] else text
 
     button_b = [
         InlineKeyboardButton(
