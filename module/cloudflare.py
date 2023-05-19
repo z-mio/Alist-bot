@@ -563,12 +563,12 @@ async def send_cronjob_status_push(app):
                 chat_data[f'{node}_count'] = 0
 
             if result == 200:
-                text_a = f'🟢{node}|节点已恢复'
+                text_a = f'🟢{node}|已恢复'
             elif result == 429:
-                text_a = f'🔴{node}|节点请求数耗尽'
+                text_a = f'🔴{node}|请求数已耗尽'
                 chat_data[f'{node}_count'] += 1
             else:
-                text_a = f'⭕️{node}|节点异常'
+                text_a = f'⭕️{node}|异常'
                 chat_data[f'{node}_count'] += 1
 
             if result != 200 and 0 < chat_data[f'{node}_count'] <= 3:
