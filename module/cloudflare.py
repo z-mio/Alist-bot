@@ -217,7 +217,7 @@ def cf_aaa():
         nodes = [value['url'] for value in nodee()]
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [executor.submit(check_node_status, node) for node in nodes]
-        results = [future.result() for future in concurrent.futures.wait(futures).done]
+        results = [future.result()[1] for future in concurrent.futures.wait(futures).done]
         return f'''
 节点数量：{len(nodes)}
 🟢  正常：{results.count(200)}
@@ -256,7 +256,7 @@ def get_node_info(url, email, key, zone_id, day):
     ga = json.loads(ga.text)
     byte = ga['data']['viewer']['zones'][0]['httpRequests1dGroups'][0]['sum']['bytes']
     request = ga['data']['viewer']['zones'][0]['httpRequests1dGroups'][0]['sum']['requests']
-    code = check_node_status(url)
+    code = check_node_status(url)[1]
     if code == 200:
         code = '🟢'
     elif code == 429:
@@ -557,13 +557,14 @@ async def send_cronjob_status_push(app):
             futures = [executor.submit(check_node_status, node) for node in nodes]
         results = [future.result() for future in concurrent.futures.wait(futures).done]
 
-        for node, result in zip(nodes, results):
+        for node, result in results:
             if result == 200:
                 text_a = f'🟢{node}|节点已恢复'
             elif result == 429:
                 text_a = f'🔴{node}|节点请求数耗尽'
             else:
                 text_a = f'⭕️{node}|节点异常'
+
             if node not in chat_data:
                 chat_data[node] = result
 
@@ -584,12 +585,11 @@ async def send_cronjob_status_push(app):
                                 if result == 200 and i['disabled']:
                                     storage_enable(i['id'])
                                     text_b = f'🟢{node}|已开启存储：{i["mount_path"]}'
+                                    await app.send_message(chat_id=admin, text=text_b)
                                 elif result == 502 and not i['disabled']:
                                     storage_disable(i['id'])
                                     text_b = f'🔴{node}|已关闭存储：{i["mount_path"]}'
-                                else:
-                                    text_b = f'⭕️{node}|错误'
-                                await app.send_message(chat_id=admin, text=text_b)
+                                    await app.send_message(chat_id=admin, text=text_b)
 
 
 #####################################################################################
@@ -597,15 +597,15 @@ async def send_cronjob_status_push(app):
 # 检查节点状态
 def check_node_status(url):
     status_code_map = {
-        200: 200,
-        429: 429,
+        200: [url, 200],
+        429: [url, 429],
     }
     try:
         response = requests.get(f'https://{url}')
         return status_code_map.get(response.status_code, 502)
     except Exception as e:
         logging.error(e)
-        return 501
+        return [url, 501]
 
 
 # 将当前日期移位n天，并返回移位日期和移位日期的前一个和下一个日期。
