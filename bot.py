@@ -99,7 +99,7 @@ async def menu(_, message):
                   BotCommand(command="zl", description="开启/关闭 直链"),
                   BotCommand(command="st", description="存储管理"),
                   BotCommand(command="sf", description="Cloudflare节点管理"),
-                  BotCommand(command="vb", description="查看带宽"),
+                  BotCommand(command="vb", description="查看下载节点信息"),
                   BotCommand(command="cf", description="查看当前配置"),
                   BotCommand(command="bc", description="备份Alist配置"),
                   BotCommand(command="sbt", description="设置定时备份"),
@@ -109,7 +109,7 @@ async def menu(_, message):
     # 全部可见
     b_bot_menu = [BotCommand(command="start", description="开始"),
                   BotCommand(command="s", description="搜索文件"),
-                  BotCommand(command="vb", description="查看带宽"),
+                  BotCommand(command="vb", description="查看下载节点信息"),
                   ]
 
     await app.delete_bot_commands()
@@ -240,7 +240,7 @@ async def set_backup_time(_, message):
 
 # bot重启后要恢复的任务
 def recovery_task():
-    from module.cloudflare import send_cronjob_bandwidth_push
+    from module.cloudflare import send_cronjob_bandwidth_push, send_cronjob_status_push
     # Alist配置定时备份
     if backup_time() != '0':
         aps.add_job(func=recovery_send_backup_file, trigger=CronTrigger.from_crontab(backup_time()),
@@ -252,6 +252,13 @@ def recovery_task():
                     trigger=CronTrigger.from_crontab(cloudflare_cfg['cronjob']['time']),
                     job_id='cronjob_bandwidth_push')
         logging.info('带宽通知已启动')
+
+    if cloudflare_cfg['cronjob']['status_push'] or cloudflare_cfg['cronjob']['storage_mgmt']:
+        aps.add_job(func=send_cronjob_status_push, args=[app],
+                    trigger='interval',
+                    job_id='cronjob_status_push',
+                    seconds=60)
+        logging.info('状态通知已启动')
 
 
 # bot启动时验证
