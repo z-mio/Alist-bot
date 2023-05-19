@@ -594,7 +594,7 @@ async def send_cronjob_status_push(app):
                                     storage_enable(i['id'])
                                     text_b = f'🟢{node}|已开启存储：{i["mount_path"]}'
                                     await app.send_message(chat_id=admin, text=text_b)
-                                elif result == 502 and not i['disabled']:
+                                elif result == 429 and not i['disabled']:
                                     storage_disable(i['id'])
                                     text_b = f'🔴{node}|已关闭存储：{i["mount_path"]}'
                                     await app.send_message(chat_id=admin, text=text_b)
