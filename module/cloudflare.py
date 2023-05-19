@@ -190,11 +190,11 @@ async def storage_mgmt(client, message):
     elif query == 'storage_mgmt_on':
         cloudflare_cfg['cronjob']['storage_mgmt'] = True
         logging.info('已开启自动存储管理')
-        aps.modify_job(trigger='interval', seconds=10, job_id='cronjob_status_push')
+        aps.resume_job(job_id='cronjob_status_push')
         aps.add_job(func=send_cronjob_status_push, args=[client],
                     trigger='interval',
                     job_id='cronjob_status_push',
-                    seconds=10)
+                    seconds=60)
     write_config('config/cloudflare_cfg.yaml', cloudflare_cfg)
     await r_cf_menu(client, message)
 
