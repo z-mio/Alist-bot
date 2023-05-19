@@ -13,7 +13,7 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from api.alist_api import storage_list, storage_enable, storage_disable
 from api.cloudflare_api import list_zones, list_filters, graphql_api
 from bot import admin_yz
-from config.config import nodee, cronjob, cloudflare_cfg, chat_data, write_config
+from config.config import nodee, cronjob, cloudflare_cfg, chat_data, write_config, admin
 from tool.handle_exception import handle_exception
 from tool.pybyte import pybyte
 from tool.scheduler_manager import aps
@@ -558,11 +558,11 @@ async def send_cronjob_status_push(app):
 
         for node, result in zip(nodes, results):
             if result == 200:
-                text = f'🟢{node}|节点已恢复'
+                text_a = f'🟢{node}|节点已恢复'
             elif result == 429:
-                text = f'🔴{node}|节点请求数耗尽'
+                text_a = f'🔴{node}|节点请求数耗尽'
             else:
-                text = f'⭕️{node}|节点异常'
+                text_a = f'⭕️{node}|节点异常'
             if node not in chat_data:
                 chat_data[node] = result
 
@@ -571,7 +571,7 @@ async def send_cronjob_status_push(app):
                 if cloudflare_cfg['cronjob']['status_push']:
                     chat_data[node] = result
                     for i in cloudflare_cfg['cronjob']['chat_id']:
-                        await app.send_message(chat_id=i, text=text)
+                        await app.send_message(chat_id=i, text=text_a)
                 # 存储管理
                 if cloudflare_cfg['cronjob']['storage_mgmt']:
                     chat_data[node] = result
@@ -582,8 +582,13 @@ async def send_cronjob_status_push(app):
                             if i['webdav_policy'] == 'use_proxy_url' or i['web_proxy']:
                                 if result == 200 and i['disabled']:
                                     storage_enable(i['id'])
+                                    text_b = f'🟢{node}|已开启存储：{i["mount_path"]}'
                                 elif result == 502 and not i['disabled']:
                                     storage_disable(i['id'])
+                                    text_b = f'🔴{node}|已关闭存储：{i["mount_path"]}'
+                                else:
+                                    text_b = f'⭕️{node}|错误'
+                                await app.send_message(chat_id=admin, text=text_b)
 
 
 #####################################################################################
