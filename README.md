@@ -131,6 +131,23 @@
 
 </details>
 
+<details>
+<summary><b> Cloudflare节点管理</b></summary>
+
+**节点监控**：每60秒检测一次节点状态，如果节点`掉线`或`故障`会发送通知  
+**每日统计**：每日定时发送当天使用的流量  
+**存储管理**：检测到节点掉线会自动关闭存储，节点恢复后自动开启存储
+
+![VyhxfA.png](https://i.imgloc.com/2023/05/20/VyhxfA.png)
+
+![Vyh6ld.png](https://i.imgloc.com/2023/05/20/Vyh6ld.png)
+
+![Vyhv8k.png](https://i.imgloc.com/2023/05/20/Vyhv8k.png)
+
+![VyhJYp.png](https://i.imgloc.com/2023/05/20/VyhJYp.png)
+
+</details>
+
 
 </details>
 
