@@ -221,7 +221,7 @@ def cf_aaa():
         return f'''
 节点数量：{len(nodes)}
 🟢  正常：{results.count(200)}
-🔴  失效：{results.count(429)}
+🔴  掉线：{results.count(429)}
 ⭕️  错误：{results.count(501)}
 '''
     return 'Cloudflare节点管理\n暂无账号，请先添加cf账号'
@@ -377,7 +377,7 @@ def get_node_status(s):
     text = f'''
 节点数量：{len(code)}
 🟢  正常：{code.count('🟢')}
-🔴  失效：{code.count('🔴')}
+🔴  掉线：{code.count('🔴')}
 ⭕️  错误：{code.count('⭕️')}
     ''' if 'packUp' in chat_data and chat_data['packUp'] else text
 
