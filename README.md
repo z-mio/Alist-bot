@@ -2,6 +2,8 @@
 **Alist项目地址：**
 [![Readme Card](https://github-readme-stats.vercel.app/api/pin/?username=alist-org&repo=alist)](https://github.com/alist-org/alist)  
 
+**交流群**：[@mio_house](https://t.me/mio_house)
+
 **主要功能：**
 
 - [x] 搜索
