@@ -565,7 +565,7 @@ async def send_cronjob_status_push(app):
             if result == 200:
                 text_a = f'🟢{node}|恢复'
             elif result == 429:
-                text_a = f'🔴{node}|请求数耗尽'
+                text_a = f'🔴{node}|掉线'
                 chat_data[f'{node}_count'] += 1
             else:
                 text_a = f'⭕️{node}|故障'
