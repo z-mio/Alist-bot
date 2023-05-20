@@ -26,14 +26,14 @@ return_button = [
 
 def btn():
     cf_menu_button = [
-        [InlineKeyboardButton('⚙️Cloudflare节点管理', callback_data='⚙️')],
+        [InlineKeyboardButton('⚙️CF节点管理', callback_data='⚙️')],
         [
             InlineKeyboardButton('👀查看节点', callback_data='cf_menu_node_status'),
             InlineKeyboardButton('📅通知设置', callback_data='cf_menu_cronjob'),
             InlineKeyboardButton('🆔账号管理', callback_data='cf_menu_account'),
         ],
         [
-            InlineKeyboardButton('⚡️', callback_data='⚡️'),
+            InlineKeyboardButton('⚡️功能开关', callback_data='⚡️'),
         ],
         [
             InlineKeyboardButton('✅节点监控' if cronjob()['status_push'] else '❎状态通知',
