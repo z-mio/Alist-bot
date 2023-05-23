@@ -240,7 +240,7 @@ async def set_backup_time(_, message):
 
 # bot重启后要恢复的任务
 def recovery_task():
-    from module.cloudflare import send_cronjob_bandwidth_push, send_cronjob_status_push
+    from module.cloudflare import send_cronjob_bandwidth_push, send_cronjob_status_push, scheduled_reset_node
     # Alist配置定时备份
     if backup_time() != '0':
         aps.add_job(func=recovery_send_backup_file, trigger=CronTrigger.from_crontab(backup_time()),
@@ -253,12 +253,18 @@ def recovery_task():
                     job_id='cronjob_bandwidth_push')
         logging.info('带宽通知已启动')
 
-    if cloudflare_cfg['cronjob']['status_push'] or cloudflare_cfg['cronjob']['storage_mgmt']:
+    cronjob = cloudflare_cfg['cronjob']
+    if any(cronjob[key] for key in ['status_push', 'storage_mgmt', 'auto_switch_nodes']):
         aps.add_job(func=send_cronjob_status_push, args=[app],
                     trigger='interval',
                     job_id='cronjob_status_push',
                     seconds=60)
-        logging.info('状态通知已启动')
+        if cloudflare_cfg['cronjob']['auto_switch_nodes']:
+            aps.add_job(func=scheduled_reset_node,
+                        trigger=CronTrigger.from_crontab('0 8 * * *'),
+                        job_id='scheduled_reset_node')
+            logging.info('已开启：定时恢复存储节点')
+        logging.info('节点监控已启动')
 
 
 # bot启动时验证

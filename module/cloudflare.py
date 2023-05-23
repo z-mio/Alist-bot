@@ -10,7 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 from pyrogram import filters, Client
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from api.alist_api import storage_list, storage_enable, storage_disable
+from api.alist_api import storage_list, storage_enable, storage_disable, storage_update
 from api.cloudflare_api import list_zones, list_filters, graphql_api
 from bot import admin_yz
 from config.config import nodee, cronjob, cloudflare_cfg, chat_data, write_config, admin
@@ -36,15 +36,22 @@ def btn():
             InlineKeyboardButton('⚡️功能开关', callback_data='⚡️'),
         ],
         [
-            InlineKeyboardButton('✅节点监控' if cronjob()['status_push'] else '❎状态通知',
-                                 callback_data='cronjob_status_off' if cronjob()[
-                                     'status_push'] else 'cronjob_status_on'),
-            InlineKeyboardButton('✅每日统计' if cronjob()['bandwidth_push'] else '❎带宽通知',
-                                 callback_data='cronjob_bandwidth_off' if cronjob()[
-                                     'bandwidth_push'] else 'cronjob_bandwidth_on'),
-            InlineKeyboardButton('✅存储管理' if cronjob()['storage_mgmt'] else '❎存储管理',
+            InlineKeyboardButton('✅节点状态监控' if cronjob()['status_push'] else '❎节点状态监控',
+                                 callback_data='status_push_off' if cronjob()[
+                                     'status_push'] else 'status_push_on'),
+
+            InlineKeyboardButton('✅每日流量统计' if cronjob()['bandwidth_push'] else '❎每日流量统计',
+                                 callback_data='bandwidth_push_off' if cronjob()[
+                                     'bandwidth_push'] else 'bandwidth_push_on'),
+        ],
+        [
+            InlineKeyboardButton('✅自动管理存储' if cronjob()['storage_mgmt'] else '❎自动管理存储',
                                  callback_data='storage_mgmt_off' if cronjob()[
                                      'storage_mgmt'] else 'storage_mgmt_on'),
+
+            InlineKeyboardButton('✅自动切换节点' if cronjob()['auto_switch_nodes'] else '❎自动切换节点',
+                                 callback_data='auto_switch_nodes_off' if cronjob()[
+                                     'auto_switch_nodes'] else 'auto_switch_nodes_on'),
         ],
         [
             InlineKeyboardButton('❌关闭菜单', callback_data='cf_close'),
@@ -96,8 +103,6 @@ async def cf_button_callback(client, message):
     elif query == 'cf_menu_node_status':
         chat_data['node_status_day'] = 0
         thread_pool.submit(asyncio.run, send_node_status(client, message, chat_data['node_status_day']))
-    elif query == 'cf_menu_storage_mgmt':
-        ...
     elif query == 'cf_return':
         await r_cf_menu(client, message)
 
@@ -127,46 +132,6 @@ async def node_status(client, message):
             thread_pool.submit(asyncio.run, view_bandwidth_button(client, message, chat_data['node_status_day']))
 
 
-# 通知设置菜单按钮回调
-@Client.on_callback_query(filters.regex('^cronjob_'))
-async def cronjob_button_callback(client, message):
-    query = message.data
-    if query.startswith('cronjob_status'):
-        if query == 'cronjob_status_off':
-            cloudflare_cfg['cronjob']['status_push'] = False
-            logging.info('已关闭节点状态通知')
-            if cloudflare_cfg['cronjob']['status_push'] == cloudflare_cfg['cronjob']['storage_mgmt']:
-                aps.pause_job('cronjob_status_push')
-        elif query == 'cronjob_status_on':
-            cloudflare_cfg['cronjob']['status_push'] = True
-            logging.info('已开启节点状态通知')
-            aps.modify_job(cloudflare_cfg['cronjob']['time'], 'cronjob_status_push')
-            aps.add_job(func=send_cronjob_bandwidth_push, args=[client],
-                        trigger=CronTrigger.from_crontab(cloudflare_cfg['cronjob']['time']),
-                        job_id='cronjob_status_push')
-        write_config('config/cloudflare_cfg.yaml', cloudflare_cfg)
-        await r_cf_menu(client, message)
-
-    elif query.startswith('cronjob_bandwidth'):
-        if query == 'cronjob_bandwidth_off':
-            cloudflare_cfg['cronjob']['bandwidth_push'] = False
-            logging.info('已关闭带宽通知')
-            if cloudflare_cfg['cronjob']['status_push'] == cloudflare_cfg['cronjob']['storage_mgmt']:
-                aps.pause_job('cronjob_bandwidth_push')
-        elif query == 'cronjob_bandwidth_on':
-            cloudflare_cfg['cronjob']['bandwidth_push'] = True
-            logging.info('已开启带宽通知')
-            aps.modify_job(cloudflare_cfg['cronjob']['time'], 'cronjob_bandwidth_push')
-            aps.add_job(func=send_cronjob_bandwidth_push, args=[client],
-                        trigger=CronTrigger.from_crontab(cloudflare_cfg['cronjob']['time']),
-                        job_id='cronjob_bandwidth_push')
-        write_config('config/cloudflare_cfg.yaml', cloudflare_cfg)
-        await r_cf_menu(client, message)
-    elif query == 'cronjob_set':
-        chat_data["cronjob_set"] = False
-        await cronjob_set(client, message)
-
-
 # cf账号管理按钮回调
 @Client.on_callback_query(filters.regex('account_'))
 async def account_button_callback(client, message):
@@ -178,25 +143,70 @@ async def account_button_callback(client, message):
         await account(client, message)
 
 
-# 自动存储管理
-@Client.on_callback_query(filters.regex('^storage_mgmt'))
-async def storage_mgmt(client, message):
+# 按钮回调 通知设置
+@Client.on_callback_query(filters.regex('cronjob_set'))
+async def cronjob_set_callback(client, message):
+    chat_data["cronjob_set"] = False
+    await cronjob_set(client, message)
+
+
+async def toggle_auto_management(client, message, option, job_id, mode):
     query = message.data
-    if query == 'storage_mgmt_off':
-        cloudflare_cfg['cronjob']['storage_mgmt'] = False
-        if cloudflare_cfg['cronjob']['status_push'] == cloudflare_cfg['cronjob']['storage_mgmt']:
-            logging.info('已关闭自动存储管理')
-            aps.pause_job('cronjob_status_push')
-    elif query == 'storage_mgmt_on':
-        cloudflare_cfg['cronjob']['storage_mgmt'] = True
-        logging.info('已开启自动存储管理')
-        aps.resume_job(job_id='cronjob_status_push')
-        aps.add_job(func=send_cronjob_status_push, args=[client],
-                    trigger='interval',
-                    job_id='cronjob_status_push',
-                    seconds=60)
+    if query == option + '_off':
+        cloudflare_cfg['cronjob'][option] = False
+        logging.info(f'已关闭{option}')
+        cc = cloudflare_cfg['cronjob']
+        abc = all(not cc[key] for key in ('status_push', 'storage_mgmt', 'auto_switch_nodes'))
+        if abc or option == 'bandwidth_push':
+            logging.info('节点监控已关闭')
+            aps.pause_job(job_id)
+    elif query == option + '_on':
+        cloudflare_cfg['cronjob'][option] = True
+        logging.info(f'已开启{option}')
+        aps.resume_job(job_id=job_id)
+        if mode == 0:
+            aps.add_job(func=send_cronjob_bandwidth_push, args=[client],
+                        trigger=CronTrigger.from_crontab(cloudflare_cfg['cronjob']['time']),
+                        job_id=job_id)
+        elif mode == 1:
+            aps.add_job(func=send_cronjob_status_push, args=[client],
+                        trigger='interval',
+                        job_id=job_id,
+                        seconds=60)
     write_config('config/cloudflare_cfg.yaml', cloudflare_cfg)
     await r_cf_menu(client, message)
+
+
+# 按钮回调 节点状态
+@Client.on_callback_query(filters.regex('^status_push'))
+async def status_push(client, message):
+    await toggle_auto_management(client, message, 'status_push', 'cronjob_status_push', 1)
+
+
+# 按钮回调 每日带宽统计
+@Client.on_callback_query(filters.regex('^bandwidth_push'))
+async def bandwidth_push(client, message):
+    await toggle_auto_management(client, message, 'bandwidth_push', 'cronjob_bandwidth_push', 0)
+
+
+# 按钮回调 自动存储管理
+@Client.on_callback_query(filters.regex('^storage_mgmt'))
+async def storage_mgmt(client, message):
+    await toggle_auto_management(client, message, 'storage_mgmt', 'cronjob_status_push', 1)
+
+
+# 按钮回调 自动切换节点
+@Client.on_callback_query(filters.regex('^auto_switch_nodes'))
+async def auto_switch_nodes(client, message):
+    await toggle_auto_management(client, message, 'auto_switch_nodes', 'cronjob_status_push', 1)
+    if cloudflare_cfg['cronjob']['auto_switch_nodes']:
+        aps.add_job(func=scheduled_reset_node,
+                    trigger=CronTrigger.from_crontab('0 8 * * *'),
+                    job_id='scheduled_reset_node')
+        logging.info('已开启：定时恢复存储节点')
+    else:
+        aps.pause_job('scheduled_reset_node')
+        logging.info('已关闭：定时恢复存储节点')
 
 
 #####################################################################################
@@ -549,28 +559,56 @@ async def send_cronjob_bandwidth_push(app):
                                reply_markup=InlineKeyboardMarkup([vv[1], vv[2]]))
 
 
+# 重置存储使用的节点
+def scheduled_reset_node():
+    try:
+        for i in chat_data['default_node']:
+            storage_update(i)
+        logging.info('已恢复默认存储节点')
+    except Exception as e:
+        logging.info('恢复默认存储节点失败：', e)
+
+
 # 节点状态通知定时任务
+@handle_exception
 async def send_cronjob_status_push(app):
     if nodee():
         nodes = [value['url'] for value in nodee()]
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [executor.submit(check_node_status, node) for node in nodes]
+        # 全部节点
         results = [future.result() for future in concurrent.futures.wait(futures).done]
+
+        available_nodes = []
+        if cloudflare_cfg['cronjob']['auto_switch_nodes']:
+            # 筛选出可用的节点
+            node_pool = [f'https://{node}' for node, result in results if result == 200]
+            # 已经在使用的节点
+            sl = json.loads(storage_list().text)['data']['content']
+            used_node = [node['down_proxy_url'] for node in sl if
+                         node['webdav_policy'] == 'use_proxy_url' or node['web_proxy']]
+            # 将已用的节点从可用节点中删除
+            available_nodes = [x for x in node_pool if x not in used_node]
 
         for node, result in results:
             if node not in chat_data:
                 chat_data[node] = result
                 chat_data[f'{node}_count'] = 0
 
+            if 'default_node' not in chat_data:
+                sl = json.loads(storage_list().text)
+                chat_data['default_node'] = sl['data']['content']
+
             if result == 200:
-                text_a = f'🟢{node}|恢复'
+                text_a = f'🟢|{node}|恢复'
             elif result == 429:
-                text_a = f'🔴{node}|掉线'
+                text_a = f'🔴|{node}|掉线'
                 chat_data[f'{node}_count'] += 1
             else:
-                text_a = f'⭕️{node}|故障'
+                text_a = f'⭕️|{node}|故障'
                 chat_data[f'{node}_count'] += 1
 
+            # 错误大于3次运行，否则不运行后面代码
             if result != 200 and 0 < chat_data[f'{node}_count'] <= 3:
                 break
 
@@ -582,22 +620,31 @@ async def send_cronjob_status_push(app):
                     for i in cloudflare_cfg['cronjob']['chat_id']:
                         await app.send_message(chat_id=i, text=text_a)
 
-                # 存储管理
-                if cloudflare_cfg['cronjob']['storage_mgmt']:
-                    chat_data[node] = result
-                    st = storage_list()
-                    st = json.loads(st.text)
-                    for i in st['data']['content']:
-                        if i['down_proxy_url'] == f'https://{node}':
-                            if i['webdav_policy'] == 'use_proxy_url' or i['web_proxy']:
-                                if result == 200 and i['disabled']:
-                                    storage_enable(i['id'])
-                                    text_b = f'🟢{node}|已开启存储：{i["mount_path"]}'
-                                    await app.send_message(chat_id=admin, text=text_b)
-                                elif result == 429 and not i['disabled']:
-                                    storage_disable(i['id'])
-                                    text_b = f'🔴{node}|已关闭存储：{i["mount_path"]}'
-                                    await app.send_message(chat_id=admin, text=text_b)
+                # 自动管理
+                chat_data[node] = result
+                st = storage_list()
+                st = json.loads(st.text)
+                for dc in st['data']['content']:
+                    if dc['down_proxy_url'] == f'https://{node}':
+                        if dc['webdav_policy'] == 'use_proxy_url' or dc['web_proxy']:
+                            if result == 200 and dc['disabled']:
+                                storage_enable(dc['id'])
+                                text_b = f'🟢|{node}|已开启存储：<code>{dc["mount_path"]}</code>'
+                                await app.send_message(chat_id=admin, text=text_b)
+                            elif result == 429 and not dc['disabled']:
+                                if available_nodes:
+                                    dc['down_proxy_url'] = available_nodes[0]
+                                    storage_update(dc)
+                                    a = available_nodes[0].replace("https://", "")
+                                    text = f'🟡|<code>{dc["mount_path"]}</code>\n已自动切换节点： {node} --> {a}'
+                                    await app.send_message(chat_id=admin,
+                                                           text=text,
+                                                           disable_web_page_preview=True)
+                                elif cloudflare_cfg['cronjob']['storage_mgmt']:
+                                    storage_disable(dc['id'])
+                                    await app.send_message(chat_id=admin,
+                                                           text=f'🔴|{node}|已关闭存储：<code>{dc["mount_path"]}</code>',
+                                                           disable_web_page_preview=True)
 
 
 #####################################################################################
@@ -610,7 +657,7 @@ def check_node_status(url):
     }
     try:
         response = requests.get(f'https://{url}')
-        return status_code_map.get(response.status_code, 502)
+        return status_code_map.get(response.status_code, [url, 502])
     except Exception as e:
         logging.error(e)
         return [url, 501]
