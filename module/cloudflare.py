@@ -138,6 +138,7 @@ async def account_button_callback(client, message):
     query = message.data
     if query == 'account_add':
         await account_add(client, message)
+        chat_data['ad_message'] = message
     elif query == 'account_return':
         chat_data["account_add"] = False
         await account(client, message)
@@ -502,7 +503,7 @@ async def account_edit(client, message):
         del cloudflare_cfg['node'][i - 1]
     write_config("config/cloudflare_cfg.yaml", cloudflare_cfg)
     await client.delete_messages(chat_id=message.chat.id, message_ids=message.id)
-    await account_add(client, message)
+    await account_add(client, chat_data['ad_message'])
 
 
 # 通知设置
