@@ -4,5 +4,5 @@ cronjob:
   chat_id:
   status_push: false
   storage_mgmt: false
-  time: '0 24 * * *'
+  time: '50 23 * * *'
 node:
