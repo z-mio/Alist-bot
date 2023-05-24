@@ -446,7 +446,7 @@ async def account(client, message):
 async def account_add(client, message):
     chat_id, message_id = message.message.chat.id, message.message.id
     text = []
-    account_add_return_button = [
+    chat_data['account_add_return_button'] = [
         InlineKeyboardButton('↩️返回账号', callback_data='account_return'),
         InlineKeyboardButton('❌关闭菜单', callback_data='cf_close'),
     ]
@@ -458,52 +458,66 @@ async def account_add(client, message):
     else:
         t = '暂无账号'
     tt = '''
-添加：
+——————————————
+<b>添加：</b>
 一次只能添加一个账号
 第一行cf邮箱，第二行global_api_key，例：
 <code>abc123@qq.com
 285812f3012365412d33398713c156e2db314
 </code>
-删除：
+<b>删除：</b>
 *+序号，例：<code>*2</code>
 '''
     await client.edit_message_text(chat_id=chat_id,
                                    message_id=message_id,
-                                   text=t if 'account_add' in chat_data and chat_data["account_add"] else t + tt,
-                                   reply_markup=InlineKeyboardMarkup([account_add_return_button]))
+                                   text=t + tt,
+                                   reply_markup=InlineKeyboardMarkup([chat_data['account_add_return_button']]))
     chat_data["account_add"] = True
 
 
 # 开始处理
 async def account_edit(client, message):
     mt = message.text
-
+    await client.delete_messages(chat_id=message.chat.id, message_ids=message.id)
     if mt[0] != '*':
 
         i = mt.split('\n')
 
         lz = list_zones(i[0], i[1])  # 获取区域id
         lz = json.loads(lz.text)
-
         account_id = lz['result'][0]['account']['id']
         zone_id = lz['result'][0]['id']
-
         lf = list_filters(i[0], i[1], zone_id)  # 获取url
         lf = json.loads(lf.text)
-
-        url = lf['result'][0]['pattern'].rstrip('/*')
-        d = {"url": url, "email": i[0], "global_api_key": i[1], "account_id": account_id, "zone_id": zone_id}
-        if cloudflare_cfg['node']:
-            cloudflare_cfg['node'].append(d)
+        if lf['result']:
+            url = lf['result'][0]['pattern'].rstrip('/*')
+            d = {"url": url, "email": i[0], "global_api_key": i[1], "account_id": account_id, "zone_id": zone_id}
+            if cloudflare_cfg['node']:
+                cloudflare_cfg['node'].append(d)
+            else:
+                cloudflare_cfg['node'] = [d]
+            write_config("config/cloudflare_cfg.yaml", cloudflare_cfg)
+            await account_add(client, chat_data['ad_message'])
         else:
-            cloudflare_cfg['node'] = [d]
+            text = f"""
+<b>添加失败: </b>
 
+<code>{mt}</code>
+
+该域名（<code>{lz['result'][0]['name']}</code>）未添加Workers路由
+请检查后重新发送账号
+
+<b>注：</b>默认使用第一个域名的第一个Workers路由
+"""
+            await client.edit_message_text(chat_id=chat_data['ad_message'].message.chat.id,
+                                           message_id=chat_data['ad_message'].message.id,
+                                           text=text,
+                                           reply_markup=InlineKeyboardMarkup([chat_data['account_add_return_button']]))
     else:
         i = int(mt.split('*')[1])
         del cloudflare_cfg['node'][i - 1]
-    write_config("config/cloudflare_cfg.yaml", cloudflare_cfg)
-    await client.delete_messages(chat_id=message.chat.id, message_ids=message.id)
-    await account_add(client, chat_data['ad_message'])
+        write_config("config/cloudflare_cfg.yaml", cloudflare_cfg)
+        await account_add(client, chat_data['ad_message'])
 
 
 # 通知设置
