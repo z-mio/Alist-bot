@@ -142,6 +142,41 @@
 **自动切换节点**：检测到节点掉线，会自动切换其他未使用的可用节点，每天早上8点自动恢复原来的节点  
 如果`自动管理存储`和`自动切换节点`同时启用，那么当节点失效时会优先切换节点，如果节点全部不可用，才会关闭存储
 
+注：添加cf账号默认使用第一个域名的第一个Workers路由  
+**如果你cf账号里面有多个域名，域名下面有多个Workers路由，建议手动添加账号**  
+ 
+<details>
+<summary><b> 手动添加账号</b></summary>
+
+打开`cloudflare_cfg.yaml`配置文件，将账号添加到`node`列表，格式如下：  
+
+``` yaml
+node:
+- account_id: 
+  email: 
+  global_api_key: 
+  url: 
+  zone_id: 
+- account_id: 
+  email: 
+  global_api_key: 
+  url: 
+  zone_id: 
+```
+
+![VDwq2d.png](https://i.imgloc.com/2023/05/24/VDwq2d.png)
+
+**account_id：`cf主页` --> `域名` --> `右下角` --> `帐户 ID`**  
+**zone_id: `cf主页` --> `域名` --> `右下角` --> `区域 ID`**
+![VDwaIo.png](https://i.imgloc.com/2023/05/24/VDwaIo.png)
+**email：cf账号的邮箱**  
+**global_api_key：`cf主页` --> `右上角头像` --> `我的个人资料` --> `API 令牌` --> `Global API Key`**  
+**url：填workers路由里面添加的，用来做代理的域名就行，只填域名，不要加https和后面的/*，例：a.ziling.cf**  
+![VDwLmJ.png](https://i.imgloc.com/2023/05/24/VDwLmJ.png)  
+
+
+
+</details>
 
 ![VAFmRJ.png](https://i.imgloc.com/2023/05/23/VAFmRJ.png)
 
