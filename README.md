@@ -244,7 +244,7 @@ After=network.target
 [Service]
 User=root
 WorkingDirectory=/root/Alist-bot
-ExecStart=nohup python3 bot.py > botlog.log 2>&1 &
+ExecStart=/usr/bin/python3 bot.py > /dev/null 2>&1 &
 Restart=always
 
 [Install]
