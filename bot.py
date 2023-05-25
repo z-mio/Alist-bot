@@ -27,6 +27,10 @@ if platform.system() != 'Windows':
     time.tzset()
 
 logging.basicConfig(
+    handlers=[
+        logging.FileHandler('bot_log.log'),  # 输出到文件
+        logging.StreamHandler()  # 输出到控制台
+    ],
     format='%(asctime)s - %(name)s - %(levelname)s: %(message)s',
     level=logging.INFO
 )
