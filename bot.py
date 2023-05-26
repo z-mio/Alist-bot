@@ -45,20 +45,20 @@ proxy = {
 plugins = dict(root="module")
 if os.path.exists('my_bot.session'):
     app = (
-        Client("my_bot", proxy=proxy, plugins=plugins)
+        Client("my_bot", proxy=proxy, plugins=plugins, lang_code="zh")
         if scheme and hostname and port
-        else Client("my_bot", plugins=plugins)
+        else Client("my_bot", plugins=plugins, lang_code="zh")
     )
 elif scheme and hostname and port:
     app = Client(
         "my_bot", proxy=proxy,
         api_id=api_id, api_hash=api_hash,
-        bot_token=bot_token, plugins=plugins)
+        bot_token=bot_token, plugins=plugins, lang_code="zh")
 else:
     app = Client(
         "my_bot",
         api_id=api_id, api_hash=api_hash,
-        bot_token=bot_token, plugins=plugins)
+        bot_token=bot_token, plugins=plugins, lang_code="zh")
 app.set_parse_mode(enums.ParseMode.HTML)
 
 
