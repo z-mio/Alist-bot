@@ -9,7 +9,7 @@ from pyrogram import filters, Client
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from api.alist_api import (storage_update, storage_create, storage_list, storage_get, storage_delete, storage_disable,
-                           storage_enable)
+                           storage_enable, get_driver)
 from bot import admin_yz
 from config.config import storage_cfg, write_config, chat_data
 from tool.translate_key import translate_key
@@ -24,10 +24,10 @@ common_dict = {}  # 新建存储——新建存储的json模板
 with open('config/cn_dict.json', 'r', encoding='utf-8') as c:
     text_dict = json.load(c)
 
-with open("config/driver_list.json", 'r', encoding='utf-8') as d:
-    stj = json.load(d)
-    stj_key = list(stj.keys())
-    stj_translate_key = translate_key(stj_key, text_dict['driver'])
+# with open("config/driver_list.json", 'r', encoding='utf-8') as d:
+#     stj = json.load(d)
+# stj_key = list(stj.keys())
+# stj_translate_key = translate_key(stj_key, text_dict['driver'])
 
 #####################################################################################
 #####################################################################################
@@ -173,7 +173,7 @@ async def ns_button_callback(client, message):
         chat_data["ns_b"] = False
         await ns_new_b_start(client, message)
     else:
-        bvj_sn = int(bvj.strip("ns"))  # 发送选择模式菜单
+        bvj_sn = str(bvj.strip("ns"))  # 发送选择模式菜单
         await ns_mode(client, bvj_sn)
 
 
@@ -182,7 +182,6 @@ async def ns_button_callback(client, message):
 #####################################################################################
 
 # 检测普通消息
-@Client.on_message((filters.text & filters.private) & ~filters.regex(r'^\/'))
 async def echo_storage(client, message):
     if "ns_a" in chat_data and chat_data["ns_a"]:
         chat_data["ns_a"] = False
@@ -276,14 +275,15 @@ async def ds(client):
 
 # 发送 添加存储 按钮列表
 async def ns(client):
-    ns_storage_list = stj_translate_key  # 支持添加的存储列表
+    stj_key = list(json.loads(get_driver().text)['data'].keys())
+    ns_storage_list = translate_key(stj_key, text_dict['driver'])  # 支持添加的存储列表
     ns_button_list.clear()
 
     for storage_list_js in range(len(ns_storage_list)):
         button_ns = [
             InlineKeyboardButton(
                 ns_storage_list[storage_list_js],
-                callback_data=f'ns{str(storage_list_js)}',
+                callback_data=f'ns{str(stj_key[storage_list_js])}',
             )
         ]
         ns_button_list.append(button_ns)
@@ -460,7 +460,8 @@ async def ds_callback(client, bvj):
 # 选择存储后，发送添加模式按钮
 async def ns_mode(client, bvj):  # 支持添加的存储列表
     global name
-    name = stj_key[bvj]
+    # stj_key = list(json.loads(get_driver().text)['data'].keys())
+    name = bvj
     button = [
         [
             InlineKeyboardButton('☝️添加单个', callback_data=f'ns_a{str(bvj)}'),
@@ -901,6 +902,7 @@ async def storage_config(driver_name):  # sourcery skip: swap-if-expression
     default_storage_config = []  # 默认存储配置
     default_storage_config_message = []  # 发给用户的模板
     common_dict['driver'] = driver_name  # 将驱动名称加入字典
+    stj = json.loads(get_driver().text)['data']
 
     def common_c(vl):
         for i in range(len(stj[storage_name][vl])):

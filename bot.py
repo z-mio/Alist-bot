@@ -12,6 +12,7 @@ import time
 import yaml
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from logging.handlers import RotatingFileHandler
 from pyrogram import Client, filters, enums
 from pyrogram.types import BotCommand
 
@@ -28,7 +29,7 @@ if platform.system() != 'Windows':
 
 logging.basicConfig(
     handlers=[
-        logging.FileHandler('bot_log.log'),  # 输出到文件
+        RotatingFileHandler('bot_log.log', maxBytes=1024 * 1024),  # 输出到文件
         logging.StreamHandler()  # 输出到控制台
     ],
     format='%(asctime)s - %(name)s - %(levelname)s: %(message)s',
@@ -157,7 +158,7 @@ def backup_config():
 
 
 # 监听回复消息的消息
-@app.on_message(filters.text & filters.reply & filters.private)
+@app.on_message((filters.text & filters.reply & filters.private) & ~filters.regex('^/'))
 @admin_yz
 async def echo_bot(_, message):
     if message.reply_to_message.document:  # 判断回复的消息是否包含文件
@@ -240,6 +241,15 @@ async def set_backup_time(_, message):
 #####################################################################################
 
 #####################################################################################
+# 监听普通消息
+@app.on_message((filters.text & filters.private) & ~filters.regex('^/'))
+@admin_yz
+async def echo_global(client, message):
+    # print(message)
+    from module.cloudflare import echo_cloudflare
+    from module.storage import echo_storage
+    await echo_cloudflare(client, message)
+    await echo_storage(client, message)
 
 
 # bot重启后要恢复的任务

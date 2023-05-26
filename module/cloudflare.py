@@ -214,7 +214,6 @@ async def auto_switch_nodes(client, message):
 #####################################################################################
 
 # 监听普通消息
-@Client.on_message((filters.text & filters.private) & ~filters.regex('^/'))
 async def echo_cloudflare(client, message):
     if 'account_add' in chat_data and chat_data["account_add"]:
         await account_edit(client, message)
@@ -480,26 +479,29 @@ async def account_edit(client, message):
     mt = message.text
     await client.delete_messages(chat_id=message.chat.id, message_ids=message.id)
     if mt[0] != '*':
+        try:
+            i = mt.split('\n')
 
-        i = mt.split('\n')
-
-        lz = list_zones(i[0], i[1])  # 获取区域id
-        lz = json.loads(lz.text)
-        account_id = lz['result'][0]['account']['id']
-        zone_id = lz['result'][0]['id']
-        lf = list_filters(i[0], i[1], zone_id)  # 获取url
-        lf = json.loads(lf.text)
-        if lf['result']:
-            url = lf['result'][0]['pattern'].rstrip('/*')
-            d = {"url": url, "email": i[0], "global_api_key": i[1], "account_id": account_id, "zone_id": zone_id}
-            if cloudflare_cfg['node']:
-                cloudflare_cfg['node'].append(d)
-            else:
-                cloudflare_cfg['node'] = [d]
-            write_config("config/cloudflare_cfg.yaml", cloudflare_cfg)
-            await account_add(client, chat_data['ad_message'])
+            lz = list_zones(i[0], i[1])  # 获取区域id
+            lz = json.loads(lz.text)
+            account_id = lz['result'][0]['account']['id']
+            zone_id = lz['result'][0]['id']
+            lf = list_filters(i[0], i[1], zone_id)  # 获取url
+            lf = json.loads(lf.text)
+        except Exception as e:
+            await chat_data['ad_message'].answer(text=f'错误：{str(e)}')
         else:
-            text = f"""
+            if lf['result']:
+                url = lf['result'][0]['pattern'].rstrip('/*')
+                d = {"url": url, "email": i[0], "global_api_key": i[1], "account_id": account_id, "zone_id": zone_id}
+                if cloudflare_cfg['node']:
+                    cloudflare_cfg['node'].append(d)
+                else:
+                    cloudflare_cfg['node'] = [d]
+                write_config("config/cloudflare_cfg.yaml", cloudflare_cfg)
+                await account_add(client, chat_data['ad_message'])
+            else:
+                text = f"""
 <b>添加失败: </b>
 
 <code>{mt}</code>
@@ -509,10 +511,11 @@ async def account_edit(client, message):
 
 <b>注：</b>默认使用第一个域名的第一个Workers路由
 """
-            await client.edit_message_text(chat_id=chat_data['ad_message'].message.chat.id,
-                                           message_id=chat_data['ad_message'].message.id,
-                                           text=text,
-                                           reply_markup=InlineKeyboardMarkup([chat_data['account_add_return_button']]))
+                await client.edit_message_text(chat_id=chat_data['ad_message'].message.chat.id,
+                                               message_id=chat_data['ad_message'].message.id,
+                                               text=text,
+                                               reply_markup=InlineKeyboardMarkup(
+                                                   [chat_data['account_add_return_button']]))
 
     else:
         i = int(mt.split('*')[1])
@@ -578,7 +581,9 @@ async def send_cronjob_bandwidth_push(app):
 # 重置存储使用的节点
 def scheduled_reset_node():
     try:
-        for i in chat_data['default_node']:
+        with open('config/default_node.json', 'r', encoding='utf-8') as file:
+            dn = json.load(file)
+        for i in dn:
             storage_update(i)
         logging.info('已恢复默认存储节点')
     except Exception as e:
@@ -606,14 +611,15 @@ async def send_cronjob_status_push(app):
             # 将已用的节点从可用节点中删除
             available_nodes = [x for x in node_pool if x not in used_node]
 
+            if 'default_node' not in chat_data:
+                sl = json.loads(storage_list().text)
+                with open('config/default_node.json', 'w', encoding='utf-8') as file:
+                    json.dump(sl['data']['content'], file, indent=2, ensure_ascii=False)
+
         for node, result in results:
             if node not in chat_data:
                 chat_data[node] = result
                 chat_data[f'{node}_count'] = 0
-
-            if 'default_node' not in chat_data:
-                sl = json.loads(storage_list().text)
-                chat_data['default_node'] = sl['data']['content']
 
             if result == 200:
                 text_a = f'🟢|{node}|恢复'

@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
-import json
-import os
 from urllib import parse
 
+import json
+import os
 import requests
 
 from config.config import alist_host, alist_token
@@ -123,4 +123,4 @@ def get_driver():
     header = {"Authorization": alist_token}
 
     return requests.get(url, headers=header, timeout=10)
-# print(json.dumps(json.loads(get_driver().text)['data']))
+# print(get_driver().json()['data'])
