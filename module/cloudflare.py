@@ -640,6 +640,7 @@ async def send_cronjob_status_push(app):
                             elif result == 429 and not dc['disabled']:
                                 if available_nodes:
                                     dc['down_proxy_url'] = available_nodes[0]
+                                    dc['remark'] = f"节点：{available_nodes[0].replace('https://', '')}\n{dc['remark']}"
                                     storage_update(dc)
                                     a = available_nodes[0].replace("https://", "")
                                     text = f'🟡|<code>{dc["mount_path"]}</code>\n已自动切换节点： {node} --> {a}'
