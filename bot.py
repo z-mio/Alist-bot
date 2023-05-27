@@ -26,7 +26,8 @@ from tool.translate_key import translate_key
 if platform.system() != 'Windows':
     os.environ['TZ'] = 'Asia/Shanghai'
     time.tzset()
-
+if os.path.exists('bot_log.log'):
+    os.remove('bot_log.log')
 logging.basicConfig(
     handlers=[
         RotatingFileHandler('bot_log.log', maxBytes=1024 * 1024),  # 输出到文件
