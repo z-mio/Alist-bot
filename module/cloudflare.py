@@ -579,20 +579,6 @@ async def send_cronjob_bandwidth_push(app):
                                reply_markup=InlineKeyboardMarkup([vv[1], vv[2]]))
 
 
-# 重置存储使用的节点
-# def scheduled_reset_node(app):
-#     try:
-#         with open('config/default_node.json', 'r', encoding='utf-8') as file:
-#             dn = json.load(file)
-#         for i in dn:
-#             storage_update(i)
-#         await app.send_message(chat_id=admin, text='已恢复默认存储节点')
-#         logging.info('已恢复默认存储节点')
-#     except Exception as e:
-#         logging.info('恢复默认存储节点失败：', e)
-#         await app.send_message(chat_id=admin, text='恢复默认存储节点失败')
-
-
 # 节点状态通知定时任务
 async def send_cronjob_status_push(app):
     if nodee():
@@ -612,11 +598,6 @@ async def send_cronjob_status_push(app):
                          node['webdav_policy'] == 'use_proxy_url' or node['web_proxy']]
             # 将已用的节点从可用节点中删除
             available_nodes = [x for x in node_pool if x not in used_node]
-
-            # if not os.path.exists('config/default_node.json'):
-            #     sl = json.loads(storage_list().text)
-            #     with open('config/default_node.json', 'w', encoding='utf-8') as file:
-            #         json.dump(sl['data']['content'], file, indent=2, ensure_ascii=False)
 
         for node, result in results:
             if node not in chat_data:
@@ -654,6 +635,7 @@ async def send_cronjob_status_push(app):
                             if result == 200 and dc['disabled']:
                                 storage_enable(dc['id'])
                                 text_b = f'🟢|{node}|已开启存储：<code>{dc["mount_path"]}</code>'
+                                logging.info(text_b)
                                 await app.send_message(chat_id=admin, text=text_b)
                             elif result == 429 and not dc['disabled']:
                                 if available_nodes:
@@ -661,13 +643,16 @@ async def send_cronjob_status_push(app):
                                     storage_update(dc)
                                     a = available_nodes[0].replace("https://", "")
                                     text = f'🟡|<code>{dc["mount_path"]}</code>\n已自动切换节点： {node} --> {a}'
+                                    logging.info(text)
                                     await app.send_message(chat_id=admin,
                                                            text=text,
                                                            disable_web_page_preview=True)
                                 elif cloudflare_cfg['cronjob']['storage_mgmt']:
                                     storage_disable(dc['id'])
+                                    text = f'🔴|{node}|已关闭存储：<code>{dc["mount_path"]}</code>'
+                                    logging.info(text)
                                     await app.send_message(chat_id=admin,
-                                                           text=f'🔴|{node}|已关闭存储：<code>{dc["mount_path"]}</code>',
+                                                           text=text,
                                                            disable_web_page_preview=True)
 
 

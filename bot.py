@@ -26,8 +26,7 @@ from tool.translate_key import translate_key
 if platform.system() != 'Windows':
     os.environ['TZ'] = 'Asia/Shanghai'
     time.tzset()
-if os.path.exists('bot_log.log'):
-    os.remove('bot_log.log')
+
 logging.basicConfig(
     handlers=[
         RotatingFileHandler('bot_log.log', maxBytes=1024 * 1024),  # 输出到文件
@@ -274,11 +273,6 @@ def recovery_task():
                     trigger='interval',
                     job_id='cronjob_status_push',
                     seconds=60)
-        # if cloudflare_cfg['cronjob']['auto_switch_nodes']:
-        #     aps.add_job(func=scheduled_reset_node, args=[app],
-        #                 trigger=CronTrigger.from_crontab('0 8 * * *'),
-        #                 job_id='scheduled_reset_node')
-        #     logging.info('已开启：定时恢复存储节点')
         logging.info('节点监控已启动')
 
 
