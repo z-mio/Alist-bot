@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+
 import asyncio
 import concurrent.futures
 import contextlib
@@ -200,14 +201,14 @@ async def storage_mgmt(client, message):
 @Client.on_callback_query(filters.regex('^auto_switch_nodes'))
 async def auto_switch_nodes(client, message):
     await toggle_auto_management(client, message, 'auto_switch_nodes', 'cronjob_status_push', 1)
-    if cloudflare_cfg['cronjob']['auto_switch_nodes']:
-        aps.add_job(func=scheduled_reset_node,
-                    trigger=CronTrigger.from_crontab('0 8 * * *'),
-                    job_id='scheduled_reset_node')
-        logging.info('已开启：定时恢复存储节点')
-    else:
-        aps.pause_job('scheduled_reset_node')
-        logging.info('已关闭：定时恢复存储节点')
+    # if cloudflare_cfg['cronjob']['auto_switch_nodes']:
+    # aps.add_job(func=scheduled_reset_node,
+    #             trigger=CronTrigger.from_crontab('0 8 * * *'),
+    #             job_id='scheduled_reset_node')
+    # logging.info('已开启：定时恢复存储节点')
+    # else:
+    #     aps.pause_job('scheduled_reset_node')
+    #     logging.info('已关闭：定时恢复存储节点')
 
 
 #####################################################################################
@@ -537,7 +538,7 @@ time 为带宽通知时间，格式为5位cron表达式
 
 chat_id 和 time 一行一个，例：
 <code>123123,321321
-0 24 * * *</code>
+0 23 * * *</code>
 """
 
     await client.edit_message_text(chat_id=chat_id,
@@ -579,19 +580,20 @@ async def send_cronjob_bandwidth_push(app):
 
 
 # 重置存储使用的节点
-def scheduled_reset_node():
-    try:
-        with open('config/default_node.json', 'r', encoding='utf-8') as file:
-            dn = json.load(file)
-        for i in dn:
-            storage_update(i)
-        logging.info('已恢复默认存储节点')
-    except Exception as e:
-        logging.info('恢复默认存储节点失败：', e)
+# def scheduled_reset_node(app):
+#     try:
+#         with open('config/default_node.json', 'r', encoding='utf-8') as file:
+#             dn = json.load(file)
+#         for i in dn:
+#             storage_update(i)
+#         await app.send_message(chat_id=admin, text='已恢复默认存储节点')
+#         logging.info('已恢复默认存储节点')
+#     except Exception as e:
+#         logging.info('恢复默认存储节点失败：', e)
+#         await app.send_message(chat_id=admin, text='恢复默认存储节点失败')
 
 
 # 节点状态通知定时任务
-@handle_exception
 async def send_cronjob_status_push(app):
     if nodee():
         nodes = [value['url'] for value in nodee()]
@@ -611,10 +613,10 @@ async def send_cronjob_status_push(app):
             # 将已用的节点从可用节点中删除
             available_nodes = [x for x in node_pool if x not in used_node]
 
-            if 'default_node' not in chat_data:
-                sl = json.loads(storage_list().text)
-                with open('config/default_node.json', 'w', encoding='utf-8') as file:
-                    json.dump(sl['data']['content'], file, indent=2, ensure_ascii=False)
+            # if not os.path.exists('config/default_node.json'):
+            #     sl = json.loads(storage_list().text)
+            #     with open('config/default_node.json', 'w', encoding='utf-8') as file:
+            #         json.dump(sl['data']['content'], file, indent=2, ensure_ascii=False)
 
         for node, result in results:
             if node not in chat_data:
