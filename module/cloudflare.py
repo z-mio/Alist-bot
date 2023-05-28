@@ -26,7 +26,7 @@ return_button = [
 
 
 def btn():
-    cf_menu_button = [
+    return [
         [InlineKeyboardButton('⚙️CF节点管理', callback_data='⚙️')],
         [
             InlineKeyboardButton('👀查看节点', callback_data='cf_menu_node_status'),
@@ -37,27 +37,37 @@ def btn():
             InlineKeyboardButton('⚡️功能开关', callback_data='⚡️'),
         ],
         [
-            InlineKeyboardButton('✅节点状态监控' if cronjob()['status_push'] else '❎节点状态监控',
-                                 callback_data='status_push_off' if cronjob()[
-                                     'status_push'] else 'status_push_on'),
-
-            InlineKeyboardButton('✅每日流量统计' if cronjob()['bandwidth_push'] else '❎每日流量统计',
-                                 callback_data='bandwidth_push_off' if cronjob()[
-                                     'bandwidth_push'] else 'bandwidth_push_on'),
+            InlineKeyboardButton(
+                '✅节点状态监控' if cronjob()['status_push'] else '❎节点状态监控',
+                callback_data='status_push_off'
+                if cronjob()['status_push']
+                else 'status_push_on',
+            ),
+            InlineKeyboardButton(
+                '✅每日流量统计' if cronjob()['bandwidth_push'] else '❎每日流量统计',
+                callback_data='bandwidth_push_off'
+                if cronjob()['bandwidth_push']
+                else 'bandwidth_push_on',
+            ),
         ],
         [
-            InlineKeyboardButton('✅自动管理存储' if cronjob()['storage_mgmt'] else '❎自动管理存储',
-                                 callback_data='storage_mgmt_off' if cronjob()[
-                                     'storage_mgmt'] else 'storage_mgmt_on'),
-
-            InlineKeyboardButton('✅自动切换节点' if cronjob()['auto_switch_nodes'] else '❎自动切换节点',
-                                 callback_data='auto_switch_nodes_off' if cronjob()[
-                                     'auto_switch_nodes'] else 'auto_switch_nodes_on'),
+            InlineKeyboardButton(
+                '✅自动管理存储' if cronjob()['storage_mgmt'] else '❎自动管理存储',
+                callback_data='storage_mgmt_off'
+                if cronjob()['storage_mgmt']
+                else 'storage_mgmt_on',
+            ),
+            InlineKeyboardButton(
+                '✅自动切换节点' if cronjob()['auto_switch_nodes'] else '❎自动切换节点',
+                callback_data='auto_switch_nodes_off'
+                if cronjob()['auto_switch_nodes']
+                else 'auto_switch_nodes_on',
+            ),
         ],
         [
             InlineKeyboardButton('❌关闭菜单', callback_data='cf_close'),
-        ]]
-    return cf_menu_button
+        ],
+    ]
 
 
 bandwidth_button_a = [
@@ -154,7 +164,7 @@ async def cronjob_set_callback(client, message):
 
 async def toggle_auto_management(client, message, option, job_id, mode):
     query = message.data
-    if query == option + '_off':
+    if query == f'{option}_off':
         cloudflare_cfg['cronjob'][option] = False
         logging.info(f'已关闭{option}')
         cc = cloudflare_cfg['cronjob']
@@ -162,7 +172,7 @@ async def toggle_auto_management(client, message, option, job_id, mode):
         if abc or option == 'bandwidth_push':
             logging.info('节点监控已关闭')
             aps.pause_job(job_id)
-    elif query == option + '_on':
+    elif query == f'{option}_on':
         cloudflare_cfg['cronjob'][option] = True
         logging.info(f'已开启{option}')
         aps.resume_job(job_id=job_id)
@@ -580,81 +590,88 @@ async def send_cronjob_bandwidth_push(app):
 
 
 # 节点状态通知定时任务
-async def send_cronjob_status_push(app):
-    if nodee():
-        nodes = [value['url'] for value in nodee()]
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [executor.submit(check_node_status, node) for node in nodes]
-        # 全部节点
-        results = [future.result() for future in concurrent.futures.wait(futures).done]
+async def send_cronjob_status_push(app):  # sourcery skip: low-code-quality
+    if not nodee():
+        return
+    nodes = [value['url'] for value in nodee()]
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(check_node_status, node) for node in nodes]
+    # 全部节点
+    results = [future.result() for future in concurrent.futures.wait(futures).done]
 
-        available_nodes = []
-        if cloudflare_cfg['cronjob']['auto_switch_nodes']:
-            # 筛选出可用的节点
-            node_pool = [f'https://{node}' for node, result in results if result == 200]
-            # 已经在使用的节点
-            sl = json.loads(storage_list().text)['data']['content']
-            used_node = [node['down_proxy_url'] for node in sl if
-                         node['webdav_policy'] == 'use_proxy_url' or node['web_proxy']]
-            # 将已用的节点从可用节点中删除
-            available_nodes = [x for x in node_pool if x not in used_node]
+    available_nodes = []
+    if cloudflare_cfg['cronjob']['auto_switch_nodes']:
+        # 筛选出可用的节点
+        node_pool = [f'https://{node}' for node, result in results if result == 200]
+        # 已经在使用的节点
+        sl = json.loads(storage_list().text)['data']['content']
+        used_node = [node['down_proxy_url'] for node in sl if
+                     node['webdav_policy'] == 'use_proxy_url' or node['web_proxy']]
+        # 将已用的节点从可用节点中删除
+        available_nodes = [x for x in node_pool if x not in used_node]
 
-        for node, result in results:
-            if node not in chat_data:
+    for node, result in results:
+        if node not in chat_data:
+            chat_data[node] = result
+            chat_data[f'{node}_count'] = 0
+
+        if result == 200:
+            text_a = f'🟢|{node}|恢复'
+        elif result == 429:
+            text_a = f'🔴|{node}|掉线'
+            chat_data[f'{node}_count'] += 1
+        else:
+            text_a = f'⭕️|{node}|故障'
+            chat_data[f'{node}_count'] += 1
+
+        # 错误大于3次运行，否则不运行后面代码
+        if result != 200 and 0 < chat_data[f'{node}_count'] <= 3:
+            break
+
+        if result != chat_data[node]:
+            chat_data[f'{node}_count'] = 0
+            # 状态通知
+            if cloudflare_cfg['cronjob']['status_push']:
                 chat_data[node] = result
-                chat_data[f'{node}_count'] = 0
+                for i in cloudflare_cfg['cronjob']['chat_id']:
+                    await app.send_message(chat_id=i, text=text_a)
 
-            if result == 200:
-                text_a = f'🟢|{node}|恢复'
-            elif result == 429:
-                text_a = f'🔴|{node}|掉线'
-                chat_data[f'{node}_count'] += 1
-            else:
-                text_a = f'⭕️|{node}|故障'
-                chat_data[f'{node}_count'] += 1
-
-            # 错误大于3次运行，否则不运行后面代码
-            if result != 200 and 0 < chat_data[f'{node}_count'] <= 3:
-                break
-
-            if result != chat_data[node]:
-                chat_data[f'{node}_count'] = 0
-                # 状态通知
-                if cloudflare_cfg['cronjob']['status_push']:
-                    chat_data[node] = result
-                    for i in cloudflare_cfg['cronjob']['chat_id']:
-                        await app.send_message(chat_id=i, text=text_a)
-
-                # 自动管理
-                chat_data[node] = result
-                st = storage_list()
-                st = json.loads(st.text)
-                for dc in st['data']['content']:
-                    if dc['down_proxy_url'] == f'https://{node}':
-                        if dc['webdav_policy'] == 'use_proxy_url' or dc['web_proxy']:
-                            if result == 200 and dc['disabled']:
-                                storage_enable(dc['id'])
-                                text_b = f'🟢|{node}|已开启存储：<code>{dc["mount_path"]}</code>'
-                                logging.info(text_b)
-                                await app.send_message(chat_id=admin, text=text_b)
-                            elif result == 429 and not dc['disabled']:
-                                if available_nodes:
-                                    dc['down_proxy_url'] = available_nodes[0]
-                                    dc['remark'] = f"节点：{available_nodes[0].replace('https://', '')}\n{dc['remark']}"
-                                    storage_update(dc)
-                                    a = available_nodes[0].replace("https://", "")
-                                    text = f'🟡|<code>{dc["mount_path"]}</code>\n已自动切换节点： {node} --> {a}'
-                                    logging.info(text)
-                                    await app.send_message(chat_id=admin,
-                                                           text=text,
-                                                           disable_web_page_preview=True)
-                                elif cloudflare_cfg['cronjob']['storage_mgmt']:
-                                    storage_disable(dc['id'])
-                                    text = f'🔴|{node}|已关闭存储：<code>{dc["mount_path"]}</code>'
-                                    logging.info(text)
-                                    await app.send_message(chat_id=admin,
-                                                           text=text,
-                                                           disable_web_page_preview=True)
+            # 自动管理
+            chat_data[node] = result
+            st = storage_list()
+            st = json.loads(st.text)
+            for dc in st['data']['content']:
+                if dc['down_proxy_url'] == f'https://{node}' and (
+                        dc['webdav_policy'] == 'use_proxy_url' or dc['web_proxy']):
+                    if result == 200 and dc['disabled']:
+                        storage_enable(dc['id'])
+                        text_b = f'🟢|{node}|已开启存储：<code>{dc["mount_path"]}</code>'
+                        logging.info(text_b)
+                        await app.send_message(chat_id=admin, text=text_b)
+                    elif result == 429 and not dc['disabled']:
+                        if available_nodes:
+                            dc['down_proxy_url'] = available_nodes[0]
+                            d = available_nodes[0].replace('https://', '')
+                            if '节点：' in dc['remark']:
+                                lines = dc['remark'].split('\n')
+                                lines = [f"节点：{d}" if '节点：' in line else line for line in lines]
+                                dc['remark'] = '\n'.join(lines)
+                            else:
+                                dc['remark'] = f"节点：{d}\n{dc['remark']}"
+                            storage_update(dc)
+                            a = available_nodes[0].replace("https://", "")
+                            text = f'🟡|<code>{dc["mount_path"]}</code>\n已自动切换节点： {node} --> {a}'
+                            logging.info(text)
+                            await app.send_message(chat_id=admin,
+                                                   text=text,
+                                                   disable_web_page_preview=True)
+                        elif cloudflare_cfg['cronjob']['storage_mgmt']:
+                            storage_disable(dc['id'])
+                            text = f'🔴|{node}|已关闭存储：<code>{dc["mount_path"]}</code>'
+                            logging.info(text)
+                            await app.send_message(chat_id=admin,
+                                                   text=text,
+                                                   disable_web_page_preview=True)
 
 
 #####################################################################################
