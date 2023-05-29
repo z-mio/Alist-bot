@@ -48,7 +48,7 @@ async def roll(client, message):
     if not roll_disable():
         return
     roll_str = ' '.join(message.command[1:])
-    if roll_str == '?':
+    if roll_str.replace("？", "?") == '?':
         t = "\n".join(list(path().keys()))
         text = f'已添加的关键词：\n<code>{t}</code>'
         await client.send_message(chat_id=message.chat.id,
