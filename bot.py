@@ -100,6 +100,7 @@ async def menu(_, message):
     # 管理员私聊可见
     a_bot_menu = [BotCommand(command="start", description="开始"),
                   BotCommand(command="s", description="搜索文件"),
+                  BotCommand(command="roll", description="随机推荐"),
                   BotCommand(command="sl", description="设置搜索结果数量"),
                   BotCommand(command="zl", description="开启/关闭 直链"),
                   BotCommand(command="st", description="存储管理"),
@@ -108,12 +109,14 @@ async def menu(_, message):
                   BotCommand(command="cf", description="查看当前配置"),
                   BotCommand(command="bc", description="备份Alist配置"),
                   BotCommand(command="sbt", description="设置定时备份"),
+                  BotCommand(command="sr", description="随机推荐设置"),
                   BotCommand(command="help", description="查看帮助"),
                   ]
 
     # 全部可见
     b_bot_menu = [BotCommand(command="start", description="开始"),
                   BotCommand(command="s", description="搜索文件"),
+                  BotCommand(command="roll", description="随机推荐"),
                   BotCommand(command="vb", description="查看下载节点信息"),
                   ]
 
