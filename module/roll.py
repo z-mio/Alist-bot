@@ -43,31 +43,29 @@ async def sr_menu(client, message):
 
 
 # 随机推荐
-@Client.on_message(filters.command('roll', prefixes=['/', '?', '？']))
+@Client.on_message(filters.command('roll'))
 async def roll(client, message):
-    command = message.matches[0].group()
-    if command in ['?', '？']:
+    if not roll_disable():
+        return
+    roll_str = ' '.join(message.command[1:])
+    if roll_str == '?':
         t = "\n".join(list(path().keys()))
         text = f'已添加的关键词：\n<code>{t}</code>'
         await client.send_message(chat_id=message.chat.id,
                                   text=text)
-    else:
-        if not roll_disable():
-            return
-        roll_str = ' '.join(message.command[1:])
-        if path():
-            names, sizes, url = generate(key=roll_str or '')
-            text = f"""
+        return
+    if path():
+        names, sizes, url = generate(key=roll_str or '')
+        text = f"""
 {random_kaomoji()}：<a href="{url}">{names}</a>
 {f'{random_kaomoji()}：{sizes}' if sizes != '0.0b' else ''}
 """
-            await client.send_message(chat_id=message.chat.id,
-                                      text=text,
-                                      disable_web_page_preview=True)
-
-        else:
-            await client.send_message(chat_id=message.chat.id,
-                                      text='请先添加路径')
+        await client.send_message(chat_id=message.chat.id,
+                                  text=text,
+                                  disable_web_page_preview=True)
+    else:
+        await client.send_message(chat_id=message.chat.id,
+                                  text='请先添加路径')
 
 
 # 监听普通消息
