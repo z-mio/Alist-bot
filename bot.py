@@ -242,14 +242,17 @@ async def set_backup_time(_, message):
 
 #####################################################################################
 # 监听普通消息
-@app.on_message((filters.text & filters.private) & ~filters.regex('^/'))
+@app.on_message((filters.text & filters.private) & ~filters.regex('^[/?？]'))
 @admin_yz
 async def echo_global(client, message):
     # print(message)
     from module.cloudflare import echo_cloudflare
     from module.storage import echo_storage
+    from module.roll import echo_roll
+
     await echo_cloudflare(client, message)
     await echo_storage(client, message)
+    await echo_roll(client, message)
 
 
 # bot重启后要恢复的任务

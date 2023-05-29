@@ -72,3 +72,15 @@ def nodee():
 
 def cronjob():
     return cloudflare_cfg['cronjob']
+
+
+# roll
+roll_cfg = get_config("config/roll_cfg.yaml")
+
+
+def roll_disable():
+    return roll_cfg['roll_disable']
+
+
+def path():
+    return roll_cfg['path']

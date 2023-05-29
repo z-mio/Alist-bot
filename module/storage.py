@@ -209,7 +209,8 @@ def st_aaa():
         sl_json = json.loads(sl.text)
         zcc = len(sl_json['data']['content'])
         content_list = sl_json["data"]["content"]
-        jysl = sum(1 for item in content_list if item["disabled"])
+        jysl = sum(bool(item["disabled"])
+                   for item in content_list)
         qysl = zcc - jysl
         return f'存储数量：{zcc}\n启用：{qysl}\n禁用：{jysl}'
 

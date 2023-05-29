@@ -211,14 +211,6 @@ async def storage_mgmt(client, message):
 @Client.on_callback_query(filters.regex('^auto_switch_nodes'))
 async def auto_switch_nodes(client, message):
     await toggle_auto_management(client, message, 'auto_switch_nodes', 'cronjob_status_push', 1)
-    # if cloudflare_cfg['cronjob']['auto_switch_nodes']:
-    # aps.add_job(func=scheduled_reset_node,
-    #             trigger=CronTrigger.from_crontab('0 8 * * *'),
-    #             job_id='scheduled_reset_node')
-    # logging.info('已开启：定时恢复存储节点')
-    # else:
-    #     aps.pause_job('scheduled_reset_node')
-    #     logging.info('已关闭：定时恢复存储节点')
 
 
 #####################################################################################
