@@ -173,7 +173,7 @@ async def ns_button_callback(client, message):
         chat_data["ns_b"] = False
         await ns_new_b_start(client, message)
     else:
-        bvj_sn = str(bvj.strip("ns"))  # 发送选择模式菜单
+        bvj_sn = str(bvj.lstrip("ns"))  # 发送选择模式菜单
         await ns_mode(client, bvj_sn)
 
 
@@ -415,7 +415,6 @@ async def cs_callback(client, bvj):
     storage_id = str(driver_id[int(bvj)])
     cs_alist_get = storage_get(storage_id)  # 获取存储
     cs_json = json.loads(cs_alist_get.text)
-
     cs_storage.append(cs_json['data'])  # 保存获取的存储
     del cs_storage[0]['id']  # 删除存储id
     now = datetime.datetime.now()
@@ -547,11 +546,9 @@ async def ns_new_a(client, message):
                                            [InlineKeyboardButton('↩️︎返回存储管理', callback_data='ns_re_menu')]
                                        ]))
     else:
-
         ns_body = remove_quotes(st_cfg)
         ns_alist_post = storage_create(ns_body)  # 新建存储
         ns_json = json.loads(ns_alist_post.text)
-
         if ns_json['code'] == 200:
             await client.edit_message_text(
                 chat_id=message.chat.id,
@@ -749,7 +746,7 @@ async def st_storage_copy_cfg(client, message, bvj):
     get_a = translate_key(translate_key(get_a, text_dict['common']), text_dict['additional'])
     get_b = translate_key(translate_key(get_b, text_dict['common']), text_dict['additional'])
     get_a.update(get_b)
-    delete = ['额外信息', '状态', '修改时间', '禁用', 'id', '驱动']
+    delete = ['额外信息', '状态', '修改时间', '禁用', 'id', '驱动', '是否Sharepoint', 'AccessToken']
     for i in delete:
         try:
             get_a.pop(i)
@@ -830,6 +827,10 @@ async def user_cfg(message_text):  # sourcery skip: dict-assign-update-to-union
         for i in message_text.split('\n'):
             l_i = new_dict[i.split('=')[0].strip(' * ')]
             r_i = i.split('=')[1].replace(" ", "")
+            if r_i == 'True':
+                r_i = 'true'
+            elif r_i == 'False':
+                r_i = 'false'
             if l_i in text_dict['common']:
                 message_config[l_i] = r_i
             else:
@@ -921,9 +922,12 @@ async def storage_config(driver_name):  # sourcery skip: swap-if-expression
                 additional_dict[stj_name] = stj_default  # 将存储配置名称和默认值写入字典
             default_storage_config.append(f'{text_dict[vl][stj_name]} = {stj_default}')
             try:
+
                 for k in storage_cfg()['storage'].keys():
-                    common_dict[k] = storage_cfg()['storage'][k]
-                    additional_dict[k] = storage_cfg()['storage'][k]
+                    if k in text_dict['common'].keys():
+                        common_dict[k] = storage_cfg()['storage'][k]
+                    else:
+                        additional_dict[k] = storage_cfg()['storage'][k]
             except (AttributeError, KeyError):
                 ...
             if vl == 'common':
@@ -941,5 +945,4 @@ async def storage_config(driver_name):  # sourcery skip: swap-if-expression
     default_storage_config_message = [f"{default_storage_config_message[i]}\n" for i in
                                       range(len(default_storage_config_message))]
     text = "".join(default_storage_config_message)
-
     return text, common_dict_json

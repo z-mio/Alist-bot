@@ -7,6 +7,8 @@ import requests
 
 from config.config import alist_host, alist_token
 
+useragent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
+
 
 # 搜索文件
 def search(file_name, page: int = 1, per_page: int = 100):
@@ -42,7 +44,9 @@ def storage_get(storage_id):
 # 新建存储
 def storage_create(body):
     url = f'{alist_host}/api/admin/storage/create'
-    header = {'Authorization': alist_token}
+    header = {'UserAgent': useragent,
+              'Content-Type': 'application/json',
+              'Authorization': alist_token}
 
     return requests.post(url, json=body, headers=header, timeout=10)
 
@@ -91,8 +95,6 @@ def storage_disable(storage_id):
 # from https://github.com/lym12321/Alist-SDK/blob/dde4bcc74893f9e62281482a2395abe9a1dd8d15/alist.py#L67
 
 def upload(local_path, remote_path, file_name, as_task: bool = 'false'):
-    useragent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' \
-                'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36'
     url = f'{alist_host}/api/fs/put'
     header = {
         'UserAgent': useragent,
