@@ -24,11 +24,6 @@ common_dict = {}  # 新建存储——新建存储的json模板
 with open('config/cn_dict.json', 'r', encoding='utf-8') as c:
     text_dict = json.load(c)
 
-# with open("config/driver_list.json", 'r', encoding='utf-8') as d:
-#     stj = json.load(d)
-# stj_key = list(stj.keys())
-# stj_translate_key = translate_key(stj_key, text_dict['driver'])
-
 #####################################################################################
 #####################################################################################
 # 返回菜单
