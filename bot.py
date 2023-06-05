@@ -29,7 +29,7 @@ if platform.system() != 'Windows':
 
 logging.basicConfig(
     handlers=[
-        RotatingFileHandler('bot_log.log', maxBytes=1024 * 1024),  # 输出到文件
+        RotatingFileHandler('bot_log.log', maxBytes=1024 * 1024, backupCount=1),  # 输出到文件
         logging.StreamHandler()  # 输出到控制台
     ],
     format='%(asctime)s - %(name)s - %(levelname)s: %(message)s',
@@ -44,13 +44,7 @@ proxy = {
 }
 
 plugins = dict(root="module")
-if os.path.exists('my_bot.session'):
-    app = (
-        Client("my_bot", proxy=proxy, plugins=plugins, lang_code="zh")
-        if scheme and hostname and port
-        else Client("my_bot", plugins=plugins, lang_code="zh")
-    )
-elif scheme and hostname and port:
+if scheme and hostname and port:
     app = Client(
         "my_bot", proxy=proxy,
         api_id=api_id, api_hash=api_hash,
