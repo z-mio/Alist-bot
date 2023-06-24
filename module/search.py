@@ -47,6 +47,8 @@ chat_id_message = {}
 @Client.on_message(filters.command('s'))
 async def s(client, message):  # sourcery skip: low-code-quality
     s_str = ' '.join(message.command[1:])
+    if len(chat_id_message) == 10:
+        chat_id_message.clear()
 
     if not s_str or "_bot" in s_str:
         await client.send_message(chat_id=message.chat.id, text="请加上文件名，例：/s 巧克力")
@@ -166,5 +168,5 @@ async def search_button_callback(client, message):
     elif query == 'search_previous_page':
         if page > 1:
             chat_id_message[chat_message_id]['page'] -= 1
-            chat_id_message[chat_message_id]['pointer'] -= per_page()  # 指针每次加5，表示上一页
+            chat_id_message[chat_message_id]['pointer'] -= per_page()  # 指针每次减5，表示上一页
             await turn()
