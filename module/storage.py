@@ -1,12 +1,14 @@
 # -*- coding: UTF-8 -*-
+import concurrent.futures
 import datetime
 import json
 import logging
-import pyrogram
 import re
+
+import pyrogram
 import requests
 from pyrogram import filters, Client
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 
 from api.alist_api import (storage_update, storage_create, storage_list, storage_get, storage_delete, storage_disable,
                            storage_enable, get_driver)
@@ -23,7 +25,7 @@ common_dict = {}  # 新建存储——新建存储的json模板
 
 with open('config/cn_dict.json', 'r', encoding='utf-8') as c:
     text_dict = json.load(c)
-
+thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=20)
 #####################################################################################
 #####################################################################################
 # 返回菜单
@@ -34,7 +36,7 @@ return_button = [
 
 st_button = [
     [
-        InlineKeyboardButton('⚙️存储管理', callback_data='st_set')
+        InlineKeyboardButton('⬆️自动排序', callback_data='auto_sorting')
     ],
     [
         InlineKeyboardButton('⏯开关存储', callback_data='st_vs'),
@@ -450,6 +452,18 @@ async def ds_callback(client, bvj):
         text='🗑已删除存储：' + stid,
         reply_markup=InlineKeyboardMarkup(button_list)
     )
+
+
+@Client.on_callback_query(filters.regex(r'auto_sorting'))
+async def auto_sorting(client: Client, query: CallbackQuery):
+    st = storage_list().json()
+    content: list = st['data']['content']
+    content.sort(key=lambda x: x['mount_path'])
+    for i, v in enumerate(content):
+        await query.message.edit_text(f'排序中|{i + 1}/{len(content)}')
+        v['order'] = i
+        thread_pool.submit(storage_update, v)
+    await query.message.edit_text('排序完成！')
 
 
 # 选择存储后，发送添加模式按钮
