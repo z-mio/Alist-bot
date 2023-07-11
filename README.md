@@ -13,6 +13,7 @@
     - [x] 删除存储
     - [x] 复制存储
     - [x] 新建存储
+    - [x] 自动排序
     - [x] 批量新建存储
 - [x] Cloudflare节点管理
     - [x] 节点监控
@@ -221,9 +222,9 @@ path:
 
 ![Vt1GYH.png](https://i.imgloc.com/2023/05/30/Vt1GYH.png)
 
-</details>
+</细节>
 
-</details>
+</细节>
 
 ## 安装
 
