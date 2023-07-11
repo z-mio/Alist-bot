@@ -222,9 +222,9 @@ path:
 
 ![Vt1GYH.png](https://i.imgloc.com/2023/05/30/Vt1GYH.png)
 
-</细节>
+</details>
 
-</细节>
+</details>
 
 ## 安装
 
