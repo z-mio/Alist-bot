@@ -1,12 +1,9 @@
 # -*- coding: UTF-8 -*-
-
 import datetime
 import json
-import logging
 import os
 import platform
 import time
-from logging.handlers import RotatingFileHandler
 
 import croniter
 import pyrogram
@@ -14,28 +11,22 @@ import requests
 import yaml
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from loguru import logger
 from pyrogram import Client, filters, enums
-from pyrogram.types import BotCommand
+from pyrogram.types import BotCommand, Message
 
-from api.alist_api import storage_list
+from api.alist_api import storage_list_
 from config.config import (config, admin, alist_host, alist_token, backup_time, write_config, api_id, api_hash,
                            bot_token, scheme, hostname, port, cloudflare_cfg)
 from tool.scheduler_manager import aps
-from tool.translate_key import translate_key
+from tool.utils import translate_key, is_admin
 
 # 如果当前操作系统不是 Windows，则设置环境变量 TZ 为 'Asia/Shanghai'
 if platform.system() != 'Windows':
     os.environ['TZ'] = 'Asia/Shanghai'
     time.tzset()
 
-logging.basicConfig(
-    handlers=[
-        RotatingFileHandler('bot_log.log', maxBytes=1024 * 1024, backupCount=1),  # 输出到文件
-        logging.StreamHandler()  # 输出到控制台
-    ],
-    format='%(asctime)s - %(name)s - %(levelname)s: %(message)s',
-    level=logging.INFO
-)
+logger.add("logs/bot.log", rotation="5 MB")
 
 scheduler = AsyncIOScheduler()
 proxy = {
@@ -45,53 +36,30 @@ proxy = {
 }
 
 plugins = dict(root="module")
-if scheme and hostname and port:
-    app = Client(
-        "my_bot", proxy=proxy,
-        api_id=api_id, api_hash=api_hash,
-        bot_token=bot_token, plugins=plugins, lang_code="zh")
-else:
-    app = Client(
-        "my_bot",
-        api_id=api_id, api_hash=api_hash,
-        bot_token=bot_token, plugins=plugins, lang_code="zh")
+app = Client(
+    "my_bot", proxy=proxy if all([scheme, hostname, port]) else None, bot_token=bot_token,
+    api_id=api_id, api_hash=api_hash, plugins=plugins, lang_code="zh")
 app.set_parse_mode(enums.ParseMode.HTML)
-
-
-# 管理员验证
-def admin_yz(func):
-    async def wrapper(client, message, *args, **kwargs):
-        user_id = message.from_user.id
-        if user_id == admin:
-            return await func(client, message, *args, **kwargs)
-        try:
-            await client.send_message(chat_id=message.chat.id, text="该命令仅管理员可用")
-        except AttributeError:
-            await client.send_message(chat_id=message.message.chat.id, text="该命令仅管理员可用")
-
-    return wrapper
 
 
 # 开始
 @app.on_message(filters.command('start'))
-async def start(_, message):
-    await app.send_message(chat_id=message.chat.id, text="发送 /s+文件名 进行搜索")
+async def start(_, message: Message):
+    await message.reply("发送 /s+文件名 进行搜索")
 
 
 # 帮助
-@app.on_message(filters.command('help') & filters.private)
-@admin_yz
-async def _help(_, message):
+@app.on_message(filters.command('help') & filters.private & is_admin)
+async def _help(_, message: Message):
     text = '''
 发送图片查看图床功能
 '''
-    await app.send_message(chat_id=message.chat.id, text=text)
+    await message.reply(text)
 
 
 # 设置菜单
-@app.on_message(filters.command('menu') & filters.private)
-@admin_yz
-async def menu(_, message):
+@app.on_message(filters.command('menu') & filters.private & is_admin)
+async def menu(_, message: Message):
     # 管理员私聊可见
     a_bot_menu = [BotCommand(command="start", description="开始"),
                   BotCommand(command="s", description="搜索文件"),
@@ -123,9 +91,8 @@ async def menu(_, message):
 
 # 查看当前配置
 
-@app.on_message(filters.command('cf') & filters.private)
-@admin_yz
-async def view_current_config(_, message):
+@app.on_message(filters.command('cf') & filters.private & is_admin)
+async def view_current_config(_, message: Message):
     with open("config/config.yaml", 'r', encoding='utf-8') as f:
         cf_config = yaml.safe_load(f)
     with open("config/cn_dict.json", 'r', encoding='utf-8') as ff:
@@ -156,9 +123,8 @@ def backup_config():
 
 
 # 监听回复消息的消息
-@app.on_message((filters.text & filters.reply & filters.private) & ~filters.regex('^/'))
-@admin_yz
-async def echo_bot(_, message):
+@app.on_message((filters.text & filters.reply & filters.private) & ~filters.regex('^/') & is_admin)
+async def echo_bot(_, message: Message):
     if message.reply_to_message.document:  # 判断回复的消息是否包含文件
         await app.delete_messages(chat_id=message.chat.id,
                                   message_ids=message.id)
@@ -168,9 +134,8 @@ async def echo_bot(_, message):
 
 
 # 发送备份文件
-@app.on_message(filters.command('bc') & filters.private)
-@admin_yz
-async def send_backup_file(_, message):
+@app.on_message(filters.command('bc') & filters.private & is_admin)
+async def send_backup_file(_, message: Message):
     bc_file_name = backup_config()
     await app.send_document(chat_id=message.chat.id,
                             document=bc_file_name,
@@ -185,13 +150,12 @@ async def recovery_send_backup_file():
         chat_id=admin, document=bc_file_name, caption='#Alist配置定时备份'
     )
     os.remove(bc_file_name)
-    logging.info('定时备份成功')
+    logger.info('定时备份成功')
 
 
 # 设置备份时间&开启定时备份
-@app.on_message(filters.command('sbt') & filters.private)
-@admin_yz
-async def set_backup_time(_, message):
+@app.on_message(filters.command('sbt') & filters.private & is_admin)
+async def set_backup_time(_, message: Message):
     mtime = ' '.join(message.command[1:])
     if len(mtime.split()) == 5:
         config['bot']['backup_time'] = mtime
@@ -240,17 +204,16 @@ async def set_backup_time(_, message):
 
 #####################################################################################
 # 监听普通消息
-@app.on_message((filters.text & filters.private) & ~filters.regex('^[/?？]'))
-@admin_yz
-async def echo_global(client, message):
+@app.on_message((filters.text & filters.private) & ~filters.regex('^[/?？]') & is_admin)
+async def echo_global(client: Client, message: Message):
     # print(message)
     from module.cloudflare import echo_cloudflare
     from module.storage import echo_storage
     from module.roll import echo_roll
 
-    await echo_cloudflare(client, message)
+    await echo_cloudflare(message)
     await echo_storage(client, message)
-    await echo_roll(client, message)
+    await echo_roll(message)
 
 
 # bot重启后要恢复的任务
@@ -260,13 +223,13 @@ def recovery_task():
     if backup_time() != '0':
         aps.add_job(func=recovery_send_backup_file, trigger=CronTrigger.from_crontab(backup_time()),
                     job_id='send_backup_messages_regularly_id')
-        logging.info('定时备份已启动')
+        logger.info('定时备份已启动')
 
     if cloudflare_cfg['cronjob']['bandwidth_push']:
         aps.add_job(func=send_cronjob_bandwidth_push, args=[app],
                     trigger=CronTrigger.from_crontab(cloudflare_cfg['cronjob']['time']),
                     job_id='cronjob_bandwidth_push')
-        logging.info('带宽通知已启动')
+        logger.info('带宽通知已启动')
 
     cronjob = cloudflare_cfg['cronjob']
     if any(cronjob[key] for key in ['status_push', 'storage_mgmt', 'auto_switch_nodes']):
@@ -274,29 +237,28 @@ def recovery_task():
                     trigger='interval',
                     job_id='cronjob_status_push',
                     seconds=60)
-        logging.info('节点监控已启动')
+        logger.info('节点监控已启动')
 
 
 # bot启动时验证
 def examine():
     try:
-        a = storage_list()
-        code = json.loads(a.text)
+        code = storage_list_().json()
     except json.decoder.JSONDecodeError:
-        logging.error('连接Alist失败，请检查配置alist_host是否填写正确')
+        logger.error('连接Alist失败，请检查配置alist_host是否填写正确')
         exit()
     except requests.exceptions.ReadTimeout:
-        logging.error('连接Alist超时，请检查网站状态')
+        logger.error('连接Alist超时，请检查网站状态')
         exit()
     else:
-        if code['code'] == 200:
-            ...
-        elif code['code'] == 401 and code['message'] == "that's not even a token":
-            logging.error('Alist token错误')
+        if code['code'] == 401 and code['message'] == "that's not even a token":
+            logger.error('Alist token错误')
             exit()
+    return
 
 
 if __name__ == '__main__':
+    logger.info('Bot开始运行...')
     examine()
     recovery_task()
     app.run()

@@ -6,20 +6,19 @@ import concurrent.futures
 import contextlib
 import datetime
 import json
-import logging
+
 import requests
 from apscheduler.triggers.cron import CronTrigger
+from loguru import logger
 from pyrogram import filters, Client
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
 
 from api.alist_api import storage_list, storage_enable, storage_disable, storage_update
 from api.cloudflare_api import list_zones, list_filters, graphql_api
-from bot import admin_yz
 from config.config import nodee, cronjob, cloudflare_cfg, chat_data, write_config, admin
-from tool.handle_exception import handle_exception
-from tool.pybyte import pybyte
 from tool.scheduler_manager import aps
-
+from tool.utils import is_admin
+from tool.utils import pybyte
 
 return_button = [
     InlineKeyboardButton('↩️返回菜单', callback_data='cf_return'),
@@ -98,85 +97,92 @@ thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=20)
 #####################################################################################
 #####################################################################################
 # 按钮回调
-# 菜单按钮回调
-@Client.on_callback_query(filters.regex('^cf_'))
-async def cf_button_callback(client, message):
-    query = message.data
-    if query == 'cf_close':
-        chat_data["account_add"] = False
-        chat_id = message.message.chat.id
-        message_id = message.message.id
-        await client.edit_message_text(chat_id=chat_id,
-                                       message_id=message_id,
-                                       text='已退出『节点管理』')
-    elif query == 'cf_menu_account':
-        await account(client, message)
-    elif query == 'cf_menu_cronjob':
-        await cronjob_set(client, message)
-    elif query == 'cf_menu_node_status':
-        chat_data['node_status_day'] = 0
-        thread_pool.submit(asyncio.run, send_node_status(client, message, chat_data['node_status_day']))
-    elif query == 'cf_return':
-        await r_cf_menu(client, message)
+
+@Client.on_callback_query(filters.regex('^cf_close$'))
+async def cf_close_callback(_, query: CallbackQuery):
+    chat_data["account_add"] = False
+    await query.message.edit(text='已退出『节点管理』')
+
+
+@Client.on_callback_query(filters.regex('^cf_menu_account$'))
+async def cf_menu_account_callback(_, query: CallbackQuery):
+    await account(query)
+
+
+@Client.on_callback_query(filters.regex('^cf_menu_cronjob$'))
+async def cf_menu_cronjob_callback(_, query: CallbackQuery):
+    await cronjob_set(query)
+
+
+@Client.on_callback_query(filters.regex('^cf_menu_node_status$'))
+async def cf_menu_node_status_callback(_, query: CallbackQuery):
+    chat_data['node_status_day'] = 0
+    thread_pool.submit(asyncio.run, send_node_status(query, chat_data['node_status_day']))
+
+
+@Client.on_callback_query(filters.regex('^cf_return$'))
+async def cf_return_callback(_, query: CallbackQuery):
+    await r_cf_menu(query)
 
 
 # 节点状态按钮回调
 @Client.on_callback_query(filters.regex('^gns_'))
-async def node_status(client, message):
+async def node_status(_, message: CallbackQuery):
     query = message.data
     if chat_data['node_status_mode'] == 'menu':
         if query == 'gns_status_down':
             if 'node_status_day' in chat_data and chat_data['node_status_day']:
                 chat_data['node_status_day'] += 1
-                thread_pool.submit(asyncio.run, send_node_status(client, message, chat_data['node_status_day']))
+                thread_pool.submit(asyncio.run, send_node_status(message, chat_data['node_status_day']))
         elif query == 'gns_status_up':
             chat_data['node_status_day'] -= 1
-            thread_pool.submit(asyncio.run, send_node_status(client, message, chat_data['node_status_day']))
+            thread_pool.submit(asyncio.run, send_node_status(message, chat_data['node_status_day']))
     elif chat_data['node_status_mode'] == 'command':
         if query == 'gns_expansion':
             chat_data['packUp'] = not chat_data['packUp']
-            thread_pool.submit(asyncio.run, view_bandwidth_button(client, message, chat_data['node_status_day']))
+            thread_pool.submit(asyncio.run, view_bandwidth_button(message, chat_data['node_status_day']))
         elif query == 'gns_status_down':
             if 'node_status_day' in chat_data and chat_data['node_status_day']:
                 chat_data['node_status_day'] += 1
-                thread_pool.submit(asyncio.run, view_bandwidth_button(client, message, chat_data['node_status_day']))
+                thread_pool.submit(asyncio.run, view_bandwidth_button(message, chat_data['node_status_day']))
         elif query == 'gns_status_up':
             chat_data['node_status_day'] -= 1
-            thread_pool.submit(asyncio.run, view_bandwidth_button(client, message, chat_data['node_status_day']))
+            thread_pool.submit(asyncio.run, view_bandwidth_button(message, chat_data['node_status_day']))
 
 
 # cf账号管理按钮回调
-@Client.on_callback_query(filters.regex('account_'))
-async def account_button_callback(client, message):
-    query = message.data
-    if query == 'account_add':
-        await account_add(client, message)
-        chat_data['ad_message'] = message
-    elif query == 'account_return':
-        chat_data["account_add"] = False
-        await account(client, message)
+@Client.on_callback_query(filters.regex('^account_add$'))
+async def account_add_callback(_, query: CallbackQuery):
+    await account_add(query)
+    chat_data['ad_message'] = query
+
+
+@Client.on_callback_query(filters.regex('^account_return$'))
+async def account_return_callback(_, query: CallbackQuery):
+    chat_data["account_add"] = False
+    await account(query)
 
 
 # 按钮回调 通知设置
 @Client.on_callback_query(filters.regex('cronjob_set'))
-async def cronjob_set_callback(client, message):
+async def cronjob_set_callback(_, message: CallbackQuery):
     chat_data["cronjob_set"] = False
-    await cronjob_set(client, message)
+    await cronjob_set(message)
 
 
-async def toggle_auto_management(client, message, option, job_id, mode):
+async def toggle_auto_management(client: Client, message: CallbackQuery, option, job_id, mode):
     query = message.data
     if query == f'{option}_off':
         cloudflare_cfg['cronjob'][option] = False
-        logging.info(f'已关闭{option}')
+        logger.info(f'已关闭{option}')
         cc = cloudflare_cfg['cronjob']
         abc = all(not cc[key] for key in ('status_push', 'storage_mgmt', 'auto_switch_nodes'))
         if abc or option == 'bandwidth_push':
-            logging.info('节点监控已关闭')
+            logger.info('节点监控已关闭')
             aps.pause_job(job_id)
     elif query == f'{option}_on':
         cloudflare_cfg['cronjob'][option] = True
-        logging.info(f'已开启{option}')
+        logger.info(f'已开启{option}')
         aps.resume_job(job_id=job_id)
         if mode == 0:
             aps.add_job(func=send_cronjob_bandwidth_push, args=[client],
@@ -188,30 +194,30 @@ async def toggle_auto_management(client, message, option, job_id, mode):
                         job_id=job_id,
                         seconds=60)
     write_config('config/cloudflare_cfg.yaml', cloudflare_cfg)
-    await r_cf_menu(client, message)
+    await r_cf_menu(message)
 
 
 # 按钮回调 节点状态
 @Client.on_callback_query(filters.regex('^status_push'))
-async def status_push(client, message):
+async def status_push(client: Client, message: CallbackQuery):
     await toggle_auto_management(client, message, 'status_push', 'cronjob_status_push', 1)
 
 
 # 按钮回调 每日带宽统计
 @Client.on_callback_query(filters.regex('^bandwidth_push'))
-async def bandwidth_push(client, message):
+async def bandwidth_push(client: Client, message: CallbackQuery):
     await toggle_auto_management(client, message, 'bandwidth_push', 'cronjob_bandwidth_push', 0)
 
 
 # 按钮回调 自动存储管理
 @Client.on_callback_query(filters.regex('^storage_mgmt'))
-async def storage_mgmt(client, message):
+async def storage_mgmt(client: Client, message: CallbackQuery):
     await toggle_auto_management(client, message, 'storage_mgmt', 'cronjob_status_push', 1)
 
 
 # 按钮回调 自动切换节点
 @Client.on_callback_query(filters.regex('^auto_switch_nodes'))
-async def auto_switch_nodes(client, message):
+async def auto_switch_nodes(client: Client, message: CallbackQuery):
     await toggle_auto_management(client, message, 'auto_switch_nodes', 'cronjob_status_push', 1)
 
 
@@ -219,11 +225,11 @@ async def auto_switch_nodes(client, message):
 #####################################################################################
 
 # 监听普通消息
-async def echo_cloudflare(client, message):
+async def echo_cloudflare(message: Message):
     if 'account_add' in chat_data and chat_data["account_add"]:
-        await account_edit(client, message)
+        await account_edit(message)
     elif 'cronjob_set' in chat_data and chat_data["cronjob_set"]:
-        await cronjob_set_edit(client, message)
+        await cronjob_set_edit(message)
         chat_data["cronjob_set"] = False
 
 
@@ -243,25 +249,15 @@ def cf_aaa():
 
 
 # cf菜单
-@Client.on_message(filters.command('sf') & filters.private)
-@admin_yz
-async def cf_menu(client, message):
-    chat_data['cf_menu'] = await client.send_message(chat_id=message.chat.id,
-                                                     text='检测节点中...',
-                                                     reply_markup=InlineKeyboardMarkup(btn()))
-    await client.edit_message_text(chat_id=chat_data['cf_menu'].chat.id,
-                                   message_id=chat_data['cf_menu'].id,
-                                   text=cf_aaa(),
-                                   reply_markup=InlineKeyboardMarkup(btn()))
+@Client.on_message(filters.command('sf') & filters.private & is_admin)
+async def cf_menu(_, message: Message):
+    msg = chat_data['cf_menu'] = await message.reply(text='检测节点中...', reply_markup=InlineKeyboardMarkup(btn()))
+    await msg.edit(text=cf_aaa(), reply_markup=InlineKeyboardMarkup(btn()))
 
 
 # 返回菜单
-async def r_cf_menu(client, message):
-    chat_id, message_id = message.message.chat.id, message.message.id
-    await client.edit_message_text(chat_id=chat_id,
-                                   message_id=message_id,
-                                   text=cf_aaa(),
-                                   reply_markup=InlineKeyboardMarkup(btn()))
+async def r_cf_menu(query: CallbackQuery):
+    await query.message.edit(text=cf_aaa(), reply_markup=InlineKeyboardMarkup(btn()))
 
 
 # 获取节点信息
@@ -287,39 +283,25 @@ def get_node_info(url, email, key, zone_id, day):
 
 
 # 菜单中的节点状态
-@handle_exception
-@admin_yz
-async def send_node_status(client, message, day):
-    chat_id, message_id = message.message.chat.id, message.message.id
+async def send_node_status(query: CallbackQuery, day):
     chat_data['node_status_mode'] = 'menu'
     chat_data['node_status_expand'] = False
     chat_data['packUp'] = False
     button = [bandwidth_button_a, bandwidth_button_b, bandwidth_button_c, return_button]
-    await client.edit_message_text(chat_id=chat_id,
-                                   message_id=message_id,
-                                   text='检测节点中...',
-                                   reply_markup=InlineKeyboardMarkup(button)
-                                   )
+    await query.message.edit(text='检测节点中...', reply_markup=InlineKeyboardMarkup(button))
     vv = get_node_status(day)
     a = [vv[1], vv[2], vv[3], return_button]
-
-    await client.edit_message_text(chat_id=chat_id,
-                                   message_id=message_id,
-                                   text=vv[0],
-                                   reply_markup=InlineKeyboardMarkup(a)
-                                   )
+    await query.message.edit(text=vv[0], reply_markup=InlineKeyboardMarkup(a))
 
 
 # 使用指令查看节点信息
 @Client.on_message(filters.command('vb'))
-@handle_exception
-async def view_bandwidth(client, message):
-    async def view_bandwidth_a(client_a, message_a):
+async def view_bandwidth(_, message: Message):
+    async def view_bandwidth_a(message_a):
         chat_data['node_status_mode'] = 'command'
         chat_data['packUp'] = True
         chat_data['node_status_expand'] = False
-        a = await client_a.send_message(chat_id=message_a.chat.id,
-                                        text='检测节点中...')
+        msg = await message_a.reply(text='检测节点中...')
 
         day = int(message_a.command[1]) if message_a.command[1:] else 0
         chat_data['node_status_day'] = day
@@ -330,33 +312,24 @@ async def view_bandwidth(client, message):
         text = vv[0]
         button = [button, vv[2], vv[3]] if 'packUp' in chat_data and chat_data['packUp'] else [button, vv[1], vv[2],
                                                                                                vv[3]]
-        await client_a.edit_message_text(chat_id=a.chat.id,
-                                         message_id=a.id,
-                                         text=text,
-                                         reply_markup=InlineKeyboardMarkup(button))
+        await msg.edit(text=text, reply_markup=InlineKeyboardMarkup(button))
 
-    thread_pool.submit(asyncio.run, view_bandwidth_a(client, message))
+    thread_pool.submit(asyncio.run, view_bandwidth_a(message))
 
 
 # view_bandwidth按钮
-async def view_bandwidth_button(client, message, day):
-    chat_id, message_id = message.message.chat.id, message.message.id
+async def view_bandwidth_button(query: CallbackQuery, day):
     state = '🔼点击展开🔼' if chat_data['packUp'] else '🔽点击收起🔽'
     ab = [InlineKeyboardButton(state, callback_data='gns_expansion')]
     button = [ab, bandwidth_button_a, bandwidth_button_b, bandwidth_button_c]
     if 'packUp' in chat_data and chat_data['packUp']:
         button = [ab, bandwidth_button_b, bandwidth_button_c]
-    await client.edit_message_text(chat_id=chat_id,
-                                   message_id=message_id,
-                                   text='检测节点中...',
-                                   reply_markup=InlineKeyboardMarkup(button)
-                                   )
+    await query.message.edit(text='检测节点中...', reply_markup=InlineKeyboardMarkup(button))
     vv = get_node_status(day)
     text = vv[0]
 
     button = [ab, vv[2], vv[3]] if 'packUp' in chat_data and chat_data['packUp'] else [ab, vv[1], vv[2], vv[3]]
-    await client.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
-                                   reply_markup=InlineKeyboardMarkup(button))
+    await query.message.edit(text=text, reply_markup=InlineKeyboardMarkup(button))
 
 
 # 获取节点状态
@@ -427,8 +400,7 @@ def get_node_status(s):
 
 # 账号管理
 
-async def account(client, message):
-    chat_id, message_id = message.message.chat.id, message.message.id
+async def account(query: CallbackQuery):
     text = []
     button = [
         InlineKeyboardButton('编辑', callback_data='account_add')
@@ -440,15 +412,11 @@ async def account(client, message):
         t = '\n'.join(text)
     else:
         t = '暂无账号'
-    await client.edit_message_text(chat_id=chat_id,
-                                   message_id=message_id,
-                                   text=t,
-                                   reply_markup=InlineKeyboardMarkup([button, return_button]))
+    await query.message.edit(text=t, reply_markup=InlineKeyboardMarkup([button, return_button]))
 
 
 # 添加/删除账号
-async def account_add(client, message):
-    chat_id, message_id = message.message.chat.id, message.message.id
+async def account_add(query: CallbackQuery):
     text = []
     chat_data['account_add_return_button'] = [
         InlineKeyboardButton('↩️返回账号', callback_data='account_return'),
@@ -472,27 +440,24 @@ async def account_add(client, message):
 <b>删除：</b>
 *+序号，例：<code>*2</code>
 '''
-    await client.edit_message_text(chat_id=chat_id,
-                                   message_id=message_id,
-                                   text=t + tt,
-                                   reply_markup=InlineKeyboardMarkup([chat_data['account_add_return_button']]))
+    await query.message.edit(text=t + tt, reply_markup=InlineKeyboardMarkup([chat_data['account_add_return_button']]))
     chat_data["account_add"] = True
 
 
 # 开始处理
-async def account_edit(client, message):
+async def account_edit(message: Message):
     mt = message.text
-    await client.delete_messages(chat_id=message.chat.id, message_ids=message.id)
+    await message.delete()
     if mt[0] != '*':
         try:
             i = mt.split('\n')
 
-            lz = list_zones(i[0], i[1])  # 获取区域id
-            lz = json.loads(lz.text)
+            lz = await list_zones(i[0], i[1])  # 获取区域id
+            lz = lz.json()
             account_id = lz['result'][0]['account']['id']
             zone_id = lz['result'][0]['id']
-            lf = list_filters(i[0], i[1], zone_id)  # 获取url
-            lf = json.loads(lf.text)
+            lf = await list_filters(i[0], i[1], zone_id)  # 获取url
+            lf = lf.json()
         except Exception as e:
             await chat_data['ad_message'].answer(text=f'错误：{str(e)}')
         else:
@@ -504,7 +469,7 @@ async def account_edit(client, message):
                 else:
                     cloudflare_cfg['node'] = [d]
                 write_config("config/cloudflare_cfg.yaml", cloudflare_cfg)
-                await account_add(client, chat_data['ad_message'])
+                await account_add(chat_data['ad_message'])
             else:
                 text = f"""
 <b>添加失败: </b>
@@ -516,22 +481,17 @@ async def account_edit(client, message):
 
 <b>注：</b>默认使用第一个域名的第一个Workers路由
 """
-                await client.edit_message_text(chat_id=chat_data['ad_message'].message.chat.id,
-                                               message_id=chat_data['ad_message'].message.id,
-                                               text=text,
-                                               reply_markup=InlineKeyboardMarkup(
-                                                   [chat_data['account_add_return_button']]))
+                await chat_data['ad_message'].message.edit(text=text, reply_markup=InlineKeyboardMarkup([chat_data['account_add_return_button']]))
 
     else:
         i = int(mt.split('*')[1])
         del cloudflare_cfg['node'][i - 1]
         write_config("config/cloudflare_cfg.yaml", cloudflare_cfg)
-        await account_add(client, chat_data['ad_message'])
+        await account_add(chat_data['ad_message'])
 
 
 # 通知设置
-async def cronjob_set(client, message):
-    chat_id, message_id = message.message.chat.id, message.message.id
+async def cronjob_set(query: CallbackQuery):
     text = f"""
 chat_id: <code>{",".join(list(map(str, cronjob()['chat_id']))) if cronjob()['chat_id'] else None}</code>
 time: <code>{cronjob()['time'] or None}</code>
@@ -545,16 +505,13 @@ chat_id 和 time 一行一个，例：
 0 23 * * *</code>
 """
 
-    await client.edit_message_text(chat_id=chat_id,
-                                   message_id=message_id,
-                                   text=text,
-                                   reply_markup=InlineKeyboardMarkup([return_button]))
+    await query.message.edit(text=text, reply_markup=InlineKeyboardMarkup([return_button]))
+
     chat_data["cronjob_set"] = True
 
 
 # 通知设置
-async def cronjob_set_edit(client, message):
-    chat_id, message_id = chat_data['cf_menu'].chat.id, chat_data['cf_menu'].id
+async def cronjob_set_edit(message: Message):
     d = message.text
     dd = d.split('\n')
     cloudflare_cfg['cronjob']['chat_id'] = [int(x) for x in dd[0].split(',')]
@@ -563,12 +520,10 @@ async def cronjob_set_edit(client, message):
         aps.modify_job(trigger=CronTrigger.from_crontab(cloudflare_cfg['cronjob']['time']),
                        job_id='cronjob_bandwidth_push')
     write_config('config/cloudflare_cfg.yaml', cloudflare_cfg)
-    await client.delete_messages(chat_id=message.chat.id, message_ids=message.id)
-    await client.edit_message_text(chat_id=chat_id,
-                                   message_id=message_id,
-                                   text=f"设置成功！\n-------\nchat_id：<code>{cloudflare_cfg['cronjob']['chat_id']}</code>"
-                                        f"\ntime：<code>{cloudflare_cfg['cronjob']['time']}</code>",
-                                   reply_markup=InlineKeyboardMarkup([return_button]))
+    await message.delete()
+    await chat_data['cf_menu'].edit(text=f"设置成功！\n-------\nchat_id：<code>{cloudflare_cfg['cronjob']['chat_id']}</code>"
+                                         f"\ntime：<code>{cloudflare_cfg['cronjob']['time']}</code>",
+                                    reply_markup=InlineKeyboardMarkup([return_button]))
 
 
 # 带宽通知定时任务
@@ -583,8 +538,22 @@ async def send_cronjob_bandwidth_push(app):
                                reply_markup=InlineKeyboardMarkup([vv[1], vv[2]]))
 
 
+# 　筛选出可用节点
+async def returns_the_available_nodes(results):
+    if cloudflare_cfg['cronjob']['auto_switch_nodes']:
+        # 筛选出可用的节点
+        node_pool = [f'https://{node}' for node, result in results if result == 200]
+        # 已经在使用的节点
+        sl = await storage_list()
+        sl = sl.json()['data']['content']
+        used_node = [node['down_proxy_url'] for node in sl if
+                     node['webdav_policy'] == 'use_proxy_url' or node['web_proxy']]
+        # 将已用的节点从可用节点中删除
+        return [x for x in node_pool if x not in used_node]
+
+
 # 节点状态通知定时任务
-async def send_cronjob_status_push(app):  # sourcery skip: low-code-quality
+async def send_cronjob_status_push(app):
     if not nodee():
         return
 
@@ -594,17 +563,7 @@ async def send_cronjob_status_push(app):  # sourcery skip: low-code-quality
             futures = [executor.submit(check_node_status, node) for node in nodes]
         # 全部节点
         results = [future.result() for future in concurrent.futures.wait(futures).done]
-
-        available_nodes = []
-        if cloudflare_cfg['cronjob']['auto_switch_nodes']:
-            # 筛选出可用的节点
-            node_pool = [f'https://{node}' for node, result in results if result == 200]
-            # 已经在使用的节点
-            sl = json.loads(storage_list().text)['data']['content']
-            used_node = [node['down_proxy_url'] for node in sl if
-                         node['webdav_policy'] == 'use_proxy_url' or node['web_proxy']]
-            # 将已用的节点从可用节点中删除
-            available_nodes = [x for x in node_pool if x not in used_node]
+        available_nodes = await returns_the_available_nodes(results)
 
         for node, result in results:
             if node not in chat_data:
@@ -623,53 +582,53 @@ async def send_cronjob_status_push(app):  # sourcery skip: low-code-quality
             # 错误大于3次运行，否则不运行后面代码
             if result != 200 and 0 < chat_data[f'{node}_count'] <= 3:
                 break
-
-            if result != chat_data[node]:
-                chat_data[f'{node}_count'] = 0
-                # 状态通知
-                if cloudflare_cfg['cronjob']['status_push']:
-                    chat_data[node] = result
-                    for i in cloudflare_cfg['cronjob']['chat_id']:
-                        await app.send_message(chat_id=i, text=text_a)
-
-                # 自动管理
-                chat_data[node] = result
-                st = storage_list()
-                st = json.loads(st.text)
-                for dc in st['data']['content']:
-                    if dc['down_proxy_url'] == f'https://{node}' and (
-                            dc['webdav_policy'] == 'use_proxy_url' or dc['web_proxy']):
-                        if result == 200 and dc['disabled']:
-                            storage_enable(dc['id'])
-                            text_b = f'🟢|{node}|已开启存储：<code>{dc["mount_path"]}</code>'
-                            logging.info(text_b)
-                            await app.send_message(chat_id=admin, text=text_b)
-                        elif result == 429 and not dc['disabled']:
-                            if available_nodes:
-                                dc['down_proxy_url'] = available_nodes[0]
-                                d = available_nodes[0].replace('https://', '')
-                                if '节点：' in dc['remark']:
-                                    lines = dc['remark'].split('\n')
-                                    lines = [f"节点：{d}" if '节点：' in line else line for line in lines]
-                                    dc['remark'] = '\n'.join(lines)
-                                else:
-                                    dc['remark'] = f"节点：{d}\n{dc['remark']}"
-                                storage_update(dc)
-                                a = available_nodes[0].replace("https://", "")
-                                text = f'🟡|<code>{dc["mount_path"]}</code>\n已自动切换节点： {node} --> {a}'
-                                logging.info(text)
-                                await app.send_message(chat_id=admin,
-                                                       text=text,
-                                                       disable_web_page_preview=True)
-                            elif cloudflare_cfg['cronjob']['storage_mgmt']:
-                                storage_disable(dc['id'])
-                                text = f'🔴|{node}|已关闭存储：<code>{dc["mount_path"]}</code>'
-                                logging.info(text)
-                                await app.send_message(chat_id=admin,
-                                                       text=text,
-                                                       disable_web_page_preview=True)
+            await failed_node_management(app, result, node, text_a, available_nodes)
 
     thread_pool.submit(asyncio.run, run())
+
+
+async def failed_node_management(app, result, node, text_a, available_nodes):
+    if result == chat_data[node]:
+        return
+    chat_data[f'{node}_count'] = 0
+    # 状态通知
+    if cloudflare_cfg['cronjob']['status_push']:
+        chat_data[node] = result
+        for i in cloudflare_cfg['cronjob']['chat_id']:
+            await app.send_message(chat_id=i, text=text_a)
+
+    # 自动管理
+    chat_data[node] = result
+    st = await storage_list()
+    st = st.json()
+    for dc in st['data']['content']:
+        if dc['down_proxy_url'] == f'https://{node}' and (dc['webdav_policy'] == 'use_proxy_url' or dc['web_proxy']):
+            text = ''
+            if result == 200 and dc['disabled']:
+                await storage_enable(dc['id'])
+                text = f'🟢|{node}|已开启存储：<code>{dc["mount_path"]}</code>'
+                await app.send_message(chat_id=admin, text=text)
+            elif result == 429 and not dc['disabled']:
+                if available_nodes:
+                    dc['down_proxy_url'] = available_nodes[0]
+                    d = available_nodes[0].replace('https://', '')
+                    if '节点：' in dc['remark']:
+                        lines = dc['remark'].split('\n')
+                        lines = [f"节点：{d}" if '节点：' in line else line for line in lines]
+                        dc['remark'] = '\n'.join(lines)
+                    else:
+                        dc['remark'] = f"节点：{d}\n{dc['remark']}"
+                    await storage_update(dc)
+                    a = available_nodes[0].replace("https://", "")
+                    text = f'🟡|<code>{dc["mount_path"]}</code>\n已自动切换节点： {node} --> {a}'
+                    await app.send_message(chat_id=admin, text=text,
+                                           disable_web_page_preview=True)
+                elif cloudflare_cfg['cronjob']['storage_mgmt']:
+                    await storage_disable(dc['id'])
+                    text = f'🔴|{node}|已关闭存储：<code>{dc["mount_path"]}</code>'
+                    await app.send_message(chat_id=admin, text=text,
+                                           disable_web_page_preview=True)
+            logger.info(text)
 
 
 #####################################################################################
@@ -684,7 +643,7 @@ def check_node_status(url):
         response = requests.get(f'https://{url}')
         return status_code_map.get(response.status_code, [url, 502])
     except Exception as e:
-        logging.error(e)
+        logger.error(e)
         return [url, 501]
 
 

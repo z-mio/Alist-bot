@@ -1,36 +1,38 @@
 # -*- coding: UTF-8 -*-
-import requests
+import httpx
 
 
 # 获取账户信息
-def list_accounts(email, key):
+async def list_accounts(email, key):
     url = 'https://api.cloudflare.com/client/v4/accounts'
     header = {
         'X-Auth-Email': email,
         'X-Auth-Key': key
     }
-    return requests.get(url, headers=header, timeout=10)
+    async with httpx.AsyncClient() as client:
+        return await client.get(url, headers=header, timeout=10)
 
 
 # 获取域名信息
-def list_zones(email, key):
+async def list_zones(email, key):
     url = 'https://api.cloudflare.com/client/v4/zones'
     header = {
         'X-Auth-Email': email,
         'X-Auth-Key': key
     }
-    return requests.get(url, headers=header, timeout=10)
+    async with httpx.AsyncClient() as client:
+        return await client.get(url, headers=header, timeout=10)
 
 
 # 获取Workers路由（获取节点域名
-def list_filters(email, key, zone_id):
+async def list_filters(email, key, zone_id):
     url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/workers/filters"
     headers = {
         'X-Auth-Email': email,
         'X-Auth-Key': key,
     }
-
-    return requests.get(url, headers=headers)
+    async with httpx.AsyncClient() as client:
+        return await client.get(url, headers=headers)
 
 
 # GraphQL分析API
@@ -70,4 +72,4 @@ def graphql_api(email, key, zone_tag, start, end):
         'X-Auth-Email': email,
         'X-Auth-Key': key,
     }
-    return requests.post(url, headers=header, json={'query': query, 'variables': variables}, timeout=10)
+    return httpx.post(url, headers=header, json={'query': query, 'variables': variables}, timeout=10)

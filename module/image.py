@@ -2,21 +2,22 @@
 import asyncio
 import concurrent.futures
 import datetime
-import json
 import os
 import random
 import time
+
 from pyrogram import filters, Client
+from pyrogram.types import Message
 
 from api.alist_api import upload, fs_get, refresh_list
-from bot import admin_yz
 from config.config import image_upload_path, image_save_path, alist_web, image_config, write_config
+from tool.utils import is_admin
 
 # 4线程
 thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 
-async def download_upload(client, message):
+async def download_upload(message: Message):
     now = datetime.datetime.now()
     current_time = now.strftime("%Y_%m_%d_%H_%M_%S")  # 获取当前时间
     file_name = f'{current_time}_{random.randint(1, 1000)}'
@@ -36,32 +37,22 @@ async def download_upload(client, message):
     msg = await message.reply_text(text='📥下载图片中...', quote=True, disable_web_page_preview=False)
     await message.download(file_name=file_name_path)
     # 上传到alist
-    await client.edit_message_text(chat_id=msg.chat.id,
-                                   message_id=msg.id,
-                                   text='📤上传图片中...',
-                                   disable_web_page_preview=False)
+    await msg.edit(text='📤上传图片中...', disable_web_page_preview=False)
     time.sleep(random.uniform(0.01, 0.2))
-    upload(file_name_path, image_upload_path(), file_name)
+    await upload(file_name_path, image_upload_path(), file_name)
 
     # 删除图片
     os.remove(file_name_path)
 
     # 刷新列表
-    await client.edit_message_text(chat_id=msg.chat.id,
-                                   message_id=msg.id,
-                                   text='🔄刷新列表中...',
-                                   disable_web_page_preview=False)
+    await msg.edit(text='🔄刷新列表中...', disable_web_page_preview=False)
     time.sleep(random.uniform(0.01, 0.2))
-    refresh_list(image_upload_path(), 1)
+    await refresh_list(image_upload_path(), 1)
     # 获取文件信息
-    await client.edit_message_text(chat_id=msg.chat.id,
-                                   message_id=msg.id,
-                                   text='⏳获取链接中...',
-                                   disable_web_page_preview=False)
+    await msg.edit(text='⏳获取链接中...', disable_web_page_preview=False)
     time.sleep(random.uniform(0.01, 0.2))
-    get_url = fs_get(f'{image_upload_path()}/{file_name}')
-    get_url_json = json.loads(get_url.text)
-    image_url = get_url_json['data']['raw_url']  # 直链
+    get_url = await fs_get(f'{image_upload_path()}/{file_name}')
+    image_url = get_url['data']['raw_url']  # 直链
 
     text = f'''
 图片名称：<code>{file_name}</code>
@@ -76,13 +67,11 @@ Markdown：
     # HTML：
     # <code>&lt;img src="{image_url}" alt="{file_name}" /&gt;</code>
 
-    # 发送信息
-    await client.edit_message_text(chat_id=msg.chat.id, message_id=msg.id, text=text)
+    await msg.edit(text=text)
 
 
-@Client.on_message((filters.photo | filters.document) & filters.private)
-@admin_yz
-async def single_mode(client, message):
+@Client.on_message((filters.photo | filters.document) & filters.private & is_admin)
+async def single_mode(_, message: Message):
     # 检测是否添加了说明
     if caption := message.caption:
         if ":" in caption:
@@ -99,7 +88,7 @@ async def single_mode(client, message):
     # 开始运行
     if image_config['image_upload_path']:
         # 添加任务到线程池
-        thread_pool.submit(asyncio.run, download_upload(client, message))
+        thread_pool.submit(asyncio.run, download_upload(message))
     else:
         text = '''
 未开启图床功能，请设置上传路径来开启图床
@@ -120,4 +109,4 @@ async def single_mode(client, message):
 
 设置后会自动保存，不用每次都设置
 '''
-        await client.send_message(chat_id=message.chat.id, text=text)
+        await message.reply(text=text)
