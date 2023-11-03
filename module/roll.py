@@ -23,10 +23,7 @@ def btn():
     return [
         [
             InlineKeyboardButton('🛠修改配置', callback_data='edit_roll'),
-            InlineKeyboardButton(
-                '✅随机推荐' if roll_disable() else '❎随机推荐',
-                callback_data='roll_off' if roll_disable() else 'roll_on',
-            ),
+            InlineKeyboardButton('✅随机推荐' if roll_disable() else '❎随机推荐', callback_data='roll_off' if roll_disable() else 'roll_on'),
         ],
         [
             InlineKeyboardButton('❌关闭菜单', callback_data='sr_close')
@@ -69,7 +66,7 @@ async def echo_roll(message: Message):
 
 # 菜单按钮回调
 @Client.on_callback_query(filters.regex('^sr_'))
-async def menu(query: CallbackQuery):
+async def menu(_, query: CallbackQuery):
     data = query.data
     if data == 'sr_return':
         chat_data['edit_roll'] = False
