@@ -5,9 +5,8 @@ import concurrent.futures
 import concurrent.futures
 import contextlib
 import datetime
-import json
 
-import requests
+import httpx
 from apscheduler.triggers.cron import CronTrigger
 from loguru import logger
 from pyrogram import filters, Client
@@ -264,7 +263,7 @@ async def r_cf_menu(query: CallbackQuery):
 def get_node_info(url, email, key, zone_id, day):
     d = date_shift(day)
     ga = graphql_api(email, key, zone_id, d[1], d[2])
-    ga = json.loads(ga.text)
+    ga = ga.json()
     byte = ga['data']['viewer']['zones'][0]['httpRequests1dGroups'][0]['sum']['bytes']
     request = ga['data']['viewer']['zones'][0]['httpRequests1dGroups'][0]['sum']['requests']
     code = check_node_status(url)[1]
@@ -297,7 +296,7 @@ async def send_node_status(query: CallbackQuery, day):
 # 使用指令查看节点信息
 @Client.on_message(filters.command('vb'))
 async def view_bandwidth(_, message: Message):
-    async def view_bandwidth_a(message_a):
+    async def view_bandwidth_a(message_a: Message):
         chat_data['node_status_mode'] = 'command'
         chat_data['packUp'] = True
         chat_data['node_status_expand'] = False
@@ -307,12 +306,10 @@ async def view_bandwidth(_, message: Message):
         chat_data['node_status_day'] = day
         vv = get_node_status(day)
         state = '🔼点击展开🔼' if chat_data['packUp'] else '🔽点击收起🔽'
-        button = [InlineKeyboardButton(state, callback_data='gns_expansion') if 'packUp' in chat_data and chat_data[
-            'packUp'] else None]
+        button = [InlineKeyboardButton(state, callback_data='gns_expansion') if 'packUp' in chat_data and chat_data['packUp'] else None]
         text = vv[0]
-        button = [button, vv[2], vv[3]] if 'packUp' in chat_data and chat_data['packUp'] else [button, vv[1], vv[2],
-                                                                                               vv[3]]
-        await msg.edit(text=text, reply_markup=InlineKeyboardMarkup(button))
+        button = [button, vv[2], vv[3]] if 'packUp' in chat_data and chat_data['packUp'] else [button, vv[1], vv[2], vv[3]]
+        await msg.edit_text(text=text, reply_markup=InlineKeyboardMarkup(button))
 
     thread_pool.submit(asyncio.run, view_bandwidth_a(message))
 
@@ -640,7 +637,7 @@ def check_node_status(url):
         429: [url, 429],
     }
     try:
-        response = requests.get(f'https://{url}')
+        response = httpx.get(f'https://{url}')
         return status_code_map.get(response.status_code, [url, 502])
     except Exception as e:
         logger.error(e)
