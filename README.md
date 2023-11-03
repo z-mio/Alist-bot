@@ -1,6 +1,7 @@
 # Telegram-Alist bot
+
 **Alist项目地址：**
-[![Readme Card](https://github-readme-stats.vercel.app/api/pin/?username=alist-org&repo=alist)](https://github.com/alist-org/alist)  
+[![Readme Card](https://github-readme-stats.vercel.app/api/pin/?username=alist-org&repo=alist)](https://github.com/alist-org/alist)
 
 **主要功能：**
 
@@ -26,8 +27,6 @@
 - [x] Alist配置备份&定时备份
 - [x] Alist图床
 - [x] 随机推荐
-
-
 
 ### 功能预览&说明:
 
@@ -116,7 +115,7 @@
 
 可以设置默认配置，新建存储会优先使用默认配置。所有参数都可以设置默认值
 
-比如设置了PikPak的`用户名`和`密码`，新建的时候就不需要输入了，只需要输入`挂载路径`和`分享ID`  
+比如设置了PikPak的`用户名`和`密码`，新建的时候就不需要输入了，只需要输入`挂载路径`和`分享ID`
 
 ![默认配置](https://i.328888.xyz/2023/04/11/iBDWVv.png)![默认配置](https://i.328888.xyz/2023/04/11/iBDjRQ.png)
 
@@ -143,12 +142,12 @@
 如果`自动管理存储`和`自动切换节点`同时启用，那么当节点失效时会优先切换节点，如果节点全部不可用，才会关闭存储
 
 注：添加cf账号默认使用第一个域名的第一个Workers路由  
-**如果你cf账号里面有多个域名，域名下面有多个Workers路由，建议手动添加账号**  
- 
+**如果你cf账号里面有多个域名，域名下面有多个Workers路由，建议手动添加账号**
+
 <details>
 <summary><b> 手动添加账号</b></summary>
 
-打开`cloudflare_cfg.yaml`配置文件，将账号添加到`node`列表，格式如下：  
+打开`cloudflare_cfg.yaml`配置文件，将账号添加到`node`列表，格式如下：
 
 ``` yaml
 node:
@@ -172,7 +171,7 @@ node:
 **email：cf账号的邮箱**  
 **global_api_key：`cf主页` --> `右上角头像` --> `我的个人资料` --> `API 令牌` --> `Global API Key`**  
 **url：填workers路由里面添加的，用来做代理的域名就行，只填域名，不要加https和后面的/*，例：a.ziling.cf**  
-![VDwLmJ.png](https://i.imgloc.com/2023/05/24/VDwLmJ.png)  
+![VDwLmJ.png](https://i.imgloc.com/2023/05/24/VDwLmJ.png)
 
 
 
@@ -193,7 +192,7 @@ node:
 <details>
 <summary><b> 随机推荐</b></summary>
 
-该功能会随机发送一个资源，并支持自定义路径和关键词。  
+该功能会随机发送一个资源，并支持自定义路径和关键词。
 
 **支持的命令**  
 **/sr**  
@@ -201,9 +200,9 @@ node:
 **/roll**  
 使用/roll命令，系统将从所有路径中随机选择一个资源并发送。  
 **/roll 关键词**  
-使用/roll命令后加上一个关键词，系统将从对应的路径中随机选择一个资源并发送。  
+使用/roll命令后加上一个关键词，系统将从对应的路径中随机选择一个资源并发送。
 
-您可以自定义路径和关键词，以便根据需求发送不同的资源。每个关键词可以对应多个路径，如下：  
+您可以自定义路径和关键词，以便根据需求发送不同的资源。每个关键词可以对应多个路径，如下：
 
 ``` yaml
 path:
@@ -228,15 +227,14 @@ path:
 
 ## 安装
 
-
 **1.安装 python3-pip**
 
 ```
 apt install python3-pip
 ```
 
-
 **2.将项目克隆到本地**
+
 ``` 
 git clone https://github.com/z-mio/Alist-bot.git && cd Alist-bot && pip3 install -r requirements.txt
 ```
@@ -245,7 +243,7 @@ git clone https://github.com/z-mio/Alist-bot.git && cd Alist-bot && pip3 install
 
 ``` 
 user:
-  admin: 123456789 # 管理员用户id,可通过@get_id_bot获取id
+  admin: 123456789 # 管理员用户id,可通过 https://t.me/getletbot 获取id
   alist_host: http://127.0.0.1:5244 # alist ip:port或alist域名，一般填域名即可
   alist_web: "https://" # 你的alist域名
   alist_token: "" # alist token
@@ -266,10 +264,10 @@ proxy:
 python3 bot.py
 ```
 
-
 **设置开机自启**
 
 以下是一整条命令，一起复制到SSH客户端运行
+
 ``` 
 cat > /etc/systemd/system/alist-bot.service <<EOF
 [Unit]
@@ -288,20 +286,19 @@ WantedBy=multi-user.target
 EOF
 ```
 
-然后，执行 `systemctl daemon-reload` 重载配置，现在你可以使用这些命令来管理程序：  
-
+然后，执行 `systemctl daemon-reload` 重载配置，现在你可以使用这些命令来管理程序：
 
 启动：`systemctl start alist-bot`  
 停止：`systemctl stop alist-bot`    
 开启开机自启：`systemctl enable alist-bot`  
 关闭开机自启：`systemctl disable alist-bot`  
 重启：`systemctl restart alist-bot`  
-状态：`systemctl status alist-bot`  
+状态：`systemctl status alist-bot`
 
 ## 开始使用
 
 私聊或群组里发送指令  
-第一次使用可以发送`/menu`自动设置Bot菜单  
+第一次使用可以发送`/menu`自动设置Bot菜单
 
 **指令列表：**
 
