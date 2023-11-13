@@ -86,7 +86,7 @@ async def menu(_, message: Message):
     await app.delete_bot_commands()
     await app.set_bot_commands(a_bot_menu, scope=pyrogram.types.BotCommandScopeChat(chat_id=admin))
     await app.set_bot_commands(b_bot_menu)
-    await app.send_message(chat_id=message.chat.id, text="菜单设置成功，请退出聊天界面重新进入来刷新菜单")
+    await message.reply("菜单设置成功，请退出聊天界面重新进入来刷新菜单")
 
 
 # 查看当前配置
@@ -99,8 +99,7 @@ async def view_current_config(_, message: Message):
         cn_dict = json.load(ff)
     b = translate_key(translate_key(cf_config, cn_dict["config_cn"]), cn_dict["common"])
     text = json.dumps(b, indent=4, ensure_ascii=False)
-    await app.send_message(chat_id=message.chat.id,
-                           text=f'<code>{text}</code>')
+    await message.reply(f'<code>{text}</code>')
 
 
 # 备份alist配置
@@ -126,8 +125,7 @@ def backup_config():
 @app.on_message((filters.text & filters.reply & filters.private) & ~filters.regex('^/') & is_admin)
 async def echo_bot(_, message: Message):
     if message.reply_to_message.document:  # 判断回复的消息是否包含文件
-        await app.delete_messages(chat_id=message.chat.id,
-                                  message_ids=message.id)
+        await message.delete()
         await app.edit_message_caption(chat_id=message.chat.id,
                                        message_id=message.reply_to_message_id,
                                        caption=f'#Alist配置备份\n{message.text}')
@@ -137,9 +135,7 @@ async def echo_bot(_, message: Message):
 @app.on_message(filters.command('bc') & filters.private & is_admin)
 async def send_backup_file(_, message: Message):
     bc_file_name = backup_config()
-    await app.send_document(chat_id=message.chat.id,
-                            document=bc_file_name,
-                            caption='#Alist配置备份')
+    await message.reply_document(document=bc_file_name, caption='#Alist配置备份')
     os.remove(bc_file_name)
 
 
@@ -171,12 +167,12 @@ async def set_backup_time(_, message: Message):
             aps.add_job(func=recovery_send_backup_file, trigger=CronTrigger.from_crontab(backup_time()),
                         job_id='send_backup_messages_regularly_id')
             text = f'已开启定时备份！\n下一次备份时间：{next_run_time}'
-        await app.send_message(chat_id=message.chat.id, text=text)
+        await message.reply(text)
     elif mtime == '0':
         config['bot']['backup_time'] = mtime
         write_config('config/config.yaml', config)
         aps.pause_job('send_backup_messages_regularly_id')
-        await app.send_message(chat_id=message.chat.id, text='已关闭定时备份')
+        await message.reply('已关闭定时备份')
     elif not mtime:
         text = '''格式：/sbt + 5位cron表达式，0为关闭
 
@@ -195,9 +191,9 @@ async def set_backup_time(_, message: Message):
  * * * * *
 
 '''
-        await app.send_message(chat_id=message.chat.id, text=text)
+        await message.reply(text)
     else:
-        await app.send_message(chat_id=message.chat.id, text='格式错误')
+        await message.reply('格式错误')
 
 
 #####################################################################################
