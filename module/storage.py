@@ -6,7 +6,7 @@ import logging
 import re
 from typing import Union
 
-import requests
+from httpx import ReadTimeout
 from pyrogram import filters, Client
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
 
@@ -192,7 +192,7 @@ async def echo_storage(client: Client, message: Message):
 async def st_aaa():
     try:
         sl = await storage_list()
-    except requests.exceptions.ReadTimeout:
+    except ReadTimeout:
         logging.error('连接Alist超时，请检查网站状态')
     else:
         sl_json = sl.json()
