@@ -29,6 +29,7 @@ if platform.system() != 'Windows':
 logger.add("logs/bot.log", rotation="5 MB")
 
 scheduler = AsyncIOScheduler()
+
 proxy = {
     "scheme": scheme,  # 支持“socks4”、“socks5”和“http”
     "hostname": hostname,
