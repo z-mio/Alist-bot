@@ -49,11 +49,6 @@ async def start(_, message: Message):
     await message.reply("发送 /s+文件名 进行搜索")
 
 
-@app.on_message(filters.command('zi'))
-async def zi(_, message: Message):
-    await message.reply("吱~")
-
-
 # 帮助
 @app.on_message(filters.command('help') & filters.private & is_admin)
 async def _help(_, message: Message):
