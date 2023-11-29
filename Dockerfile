@@ -1,12 +1,9 @@
-FROM ubuntu
+FROM python:3
 
-ADD . /root/Alist-bot
-WORKDIR /root/Alist-bot
+WORKDIR /usr/src/app
 
-RUN apt-get update \
-    && apt-get install -y sudo \
-    && sudo apt-get install -y python3 python3-pip \
-    && pip3 install -r requirements.txt
+COPY . .
 
+RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python3", "/root/Alist-bot/bot.py"]
+CMD ["python3", "bot.py"]
