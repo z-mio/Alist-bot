@@ -1,5 +1,6 @@
 PyYAML
 APScheduler~=3.10.1
+requests
 croniter
 Pyrogram
 TgCrypto
