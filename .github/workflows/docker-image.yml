@@ -4,7 +4,6 @@ on:
   push:
     branches: ["master"]
     paths-ignore:
-      - ".gitignore"
       - "README.md"
   pull_request:
     branches: ["master"]
