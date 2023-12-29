@@ -1,4 +1,4 @@
-# Telegram-Alist bot
+# Telegram-AList bot
 
 [![Readme Card](https://github-readme-stats.vercel.app/api/pin/?username=alist-org&repo=alist)](https://github.com/alist-org/alist)  
 
