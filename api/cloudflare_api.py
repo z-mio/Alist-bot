@@ -4,22 +4,16 @@ import httpx
 
 # 获取账户信息
 async def list_accounts(email, key):
-    url = 'https://api.cloudflare.com/client/v4/accounts'
-    header = {
-        'X-Auth-Email': email,
-        'X-Auth-Key': key
-    }
+    url = "https://api.cloudflare.com/client/v4/accounts"
+    header = {"X-Auth-Email": email, "X-Auth-Key": key}
     async with httpx.AsyncClient() as client:
         return await client.get(url, headers=header, timeout=10)
 
 
 # 获取域名信息
 async def list_zones(email, key):
-    url = 'https://api.cloudflare.com/client/v4/zones'
-    header = {
-        'X-Auth-Email': email,
-        'X-Auth-Key': key
-    }
+    url = "https://api.cloudflare.com/client/v4/zones"
+    header = {"X-Auth-Email": email, "X-Auth-Key": key}
     async with httpx.AsyncClient() as client:
         return await client.get(url, headers=header, timeout=10)
 
@@ -28,8 +22,8 @@ async def list_zones(email, key):
 async def list_filters(email, key, zone_id):
     url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/workers/filters"
     headers = {
-        'X-Auth-Email': email,
-        'X-Auth-Key': key,
+        "X-Auth-Email": email,
+        "X-Auth-Key": key,
     }
     async with httpx.AsyncClient() as client:
         return await client.get(url, headers=headers)
@@ -37,9 +31,10 @@ async def list_filters(email, key, zone_id):
 
 # GraphQL分析API
 
+
 # 域名数据统计
-def graphql_api(email, key, zone_tag, start, end):
-    url = 'https://api.cloudflare.com/client/v4/graphql'
+async def graphql_api(email, key, zone_tag, start, end):
+    url = "https://api.cloudflare.com/client/v4/graphql"
     query = """
     {
       viewer {
@@ -63,13 +58,16 @@ def graphql_api(email, key, zone_tag, start, end):
     """
     # bytes：使用的流量
     # requests：Bundled请求数
-    variables = {
-        "tag": zone_tag,
-        "start": start,
-        "end": end
-    }
+    variables = {"tag": zone_tag, "start": start, "end": end}
     header = {
-        'X-Auth-Email': email,
-        'X-Auth-Key': key,
+        "X-Auth-Email": email,
+        "X-Auth-Key": key,
     }
-    return httpx.post(url, headers=header, json={'query': query, 'variables': variables}, timeout=10)
+    async with httpx.AsyncClient() as client:
+        result = await client.post(
+            url,
+            headers=header,
+            json={"query": query, "variables": variables},
+            timeout=10,
+        )
+        return result.json()

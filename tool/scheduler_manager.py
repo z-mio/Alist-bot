@@ -20,7 +20,16 @@ class APS(Singleton):
         self.scheduler.start()
 
     # 向调度器添加一个任务
-    def add_job(self, job_id, func, trigger="cron", args=None, kwargs=None, name=None, **trigger_args):
+    def add_job(
+        self,
+        job_id,
+        func,
+        trigger="cron",
+        args=None,
+        kwargs=None,
+        name=None,
+        **trigger_args
+    ):
         """
         添加任务
 
@@ -45,7 +54,16 @@ class APS(Singleton):
         )
 
     # 修改调度器中已有的任务
-    def modify_job(self, job_id, func=None, trigger=None, args=None, kwargs=None, name=None, **trigger_args):
+    def modify_job(
+        self,
+        job_id,
+        func=None,
+        trigger=None,
+        args=None,
+        kwargs=None,
+        name=None,
+        **trigger_args
+    ):
         """
         修改任务
 
