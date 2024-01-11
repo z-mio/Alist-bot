@@ -5,6 +5,7 @@ from itertools import chain
 from apscheduler.triggers.cron import CronTrigger
 from loguru import logger
 from pyrogram import filters, Client
+from pyrogram.enums.parse_mode import ParseMode
 from pyrogram.types import (
     InlineKeyboardMarkup,
     CallbackQuery,
@@ -121,7 +122,12 @@ async def send_cronjob_status_push(app: Client):
     ):
         text = "\n\n".join(flat_results)
         logger.info(text)
-        await app.send_message(chat_id=admin, text=text, disable_web_page_preview=True)
+        await app.send_message(
+            chat_id=admin,
+            text=text,
+            disable_web_page_preview=True,
+            parse_mode=ParseMode.HTML,
+        )
 
 
 # 检测全部节点状态
@@ -177,7 +183,7 @@ async def manage_storage(dc, node, status_code, available_nodes) -> str:
     # 节点正常且存储关闭
     if status_code == 200 and dc["disabled"]:
         await alist.storage_enable(dc["id"])
-        return f'🟢|`{node}`|已开启存储:\n`{dc["mount_path"]}`'
+        return f'🟢|<code>{node}</code>|已开启存储:\n<code>{dc["mount_path"]}</code>'
     # 节点失效且存储开启
     if status_code != 200 and not dc["disabled"]:
         # 开启自动切换节点切有可用节点
@@ -197,10 +203,10 @@ async def manage_storage(dc, node, status_code, available_nodes) -> str:
                 dc["remark"] = f"节点：{d}\n{dc['remark']}"
 
             await alist.storage_update(dc)
-            return f'🟡|`{dc["mount_path"]}`\n已自动切换节点: `{node}` >> `{d}`'
+            return f'🟡|<code>{dc["mount_path"]}</code>\n已自动切换节点: <code>{node}</code> >> <code>{d}</code>'
         elif cloudflare_cfg["cronjob"]["storage_mgmt"]:
             await alist.storage_disable(dc["id"])
-            return f'🔴|`{node}`|已关闭存储:\n`{dc["mount_path"]}`'
+            return f'🔴|<code>{node}</code>|已关闭存储:\n<code>{dc["mount_path"]}</code>'
 
 
 # 筛选出可用节点
@@ -225,13 +231,15 @@ async def returns_the_available_nodes(results) -> list:
 
 # 发送节点状态
 async def notify_status_change(app: Client, node, status_code):
-    t_l = {200: f"🟢|{node}|恢复", 429: f"🔴|{node}|掉线"}
-    text = t_l.get(status_code, f"⭕️|{node}|故障")
+    t_l = {200: f"🟢|<code>{node}</code>|恢复", 429: f"🔴|<code>{node}</code>|掉线"}
+    text = t_l.get(status_code, f"⭕️|<code>{node}</code>|故障")
     logger.info(text) if status_code == 200 else logger.warning(text)
 
     if cloudflare_cfg["cronjob"]["status_push"]:
         for chat_id in cloudflare_cfg["cronjob"]["chat_id"]:
             try:
-                await app.send_message(chat_id=chat_id, text=text)
+                await app.send_message(
+                    chat_id=chat_id, text=text, parse_mode=ParseMode.HTML
+                )
             except Exception as ex:
                 logger.error(f"节点状态发送失败|{chat_id}::{ex}")

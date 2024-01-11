@@ -251,8 +251,8 @@ proxy:
 docker run -d \
   --name alist-bot \
   --restart=always \
-  -v /root/alist-bot/config/config.yaml:/usr/src/app/config/config.yaml \  # 将配置文件路径改成你上面设置的
-  ghcr.io/z-mio/Alist-bot:latest
+  -v /root/alist-bot/config/config.yaml:/usr/src/app/config/config.yaml \
+  ghcr.io/z-mio/alist-bot:latest
 ```
 
 ### 二、正常安装
