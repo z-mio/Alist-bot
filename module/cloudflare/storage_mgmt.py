@@ -212,7 +212,7 @@ async def manage_storage(dc, node, status_code, available_nodes) -> str:
 # 筛选出可用节点
 async def returns_the_available_nodes(results) -> list:
     """
-    筛选出可用节点，移除已用节点（如果包括已用节点，存储会全部变成一个代理节点，就无法负载均衡了）
+    筛选出可用节点，移除已用节点
     :param results:
     :return:
     """
@@ -225,8 +225,8 @@ async def returns_the_available_nodes(results) -> list:
         for node in sl["data"]["content"]
         if node["webdav_policy"] == "use_proxy_url" or node["web_proxy"]
     ]
-    # 将已用的节点从可用节点中删除
-    return [x for x in node_pool if x not in used_node]
+    # 将已用的节点从可用节点中删除，删除后没有节点了就重复使用节点
+    return [x for x in node_pool if x not in used_node] or node_pool
 
 
 # 发送节点状态
