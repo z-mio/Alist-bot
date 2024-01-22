@@ -19,7 +19,7 @@ from config.config import (
     path,
     write_config,
     roll_cfg,
-    alist_web,
+    alist_web, member,
 )
 from module.roll.random_kaomoji import random_kaomoji
 from tool.utils import is_admin
@@ -55,6 +55,8 @@ async def sr_menu(_, message: Message):
 # 随机推荐
 @Client.on_message(filters.command("roll"))
 async def roll(_, message: Message):
+    if member and message.chat.id not in member:
+        return
     if not roll_disable():
         return
     roll_str = " ".join(message.command[1:])

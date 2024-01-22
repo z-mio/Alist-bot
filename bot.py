@@ -28,7 +28,7 @@ from config.config import (
     scheme,
     hostname,
     port,
-    cloudflare_cfg,
+    cloudflare_cfg, member,
 )
 from tool.scheduler_manager import aps
 from tool.utils import is_admin, parse_cron
@@ -63,6 +63,8 @@ app = Client(
 # 开始
 @app.on_message(filters.command("start"))
 async def start(_, message: Message):
+    if member and message.chat.id not in member:
+        return
     await message.reply("发送 `/s+文件名` 进行搜索")
 
 

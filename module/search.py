@@ -11,7 +11,7 @@ from pyrogram.types import (
 )
 
 from api.alist_api import AListAPI
-from config.config import config, per_page, z_url, alist_web, write_config
+from config.config import config, per_page, z_url, alist_web, write_config, member
 from tool.utils import is_admin
 from tool.utils import pybyte
 
@@ -53,6 +53,8 @@ page_button = [
 # 搜索
 @Client.on_message(filters.command("s"))
 async def s(_, message: Message):
+    if member and message.chat.id not in member:
+        return
     s_str = " ".join(message.command[1:])
     if not s_str or "_bot" in s_str:
         return await message.reply("请加上文件名，例：`/s 巧克力`")

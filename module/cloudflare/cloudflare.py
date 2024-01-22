@@ -15,7 +15,14 @@ from pyrogram.types import (
 )
 
 from api.cloudflare_api import graphql_api
-from config.config import nodee, cronjob, cloudflare_cfg, chat_data, write_config
+from config.config import (
+    nodee,
+    cronjob,
+    cloudflare_cfg,
+    chat_data,
+    write_config,
+    member,
+)
 from tool.scheduler_manager import aps
 from tool.utils import is_admin
 from tool.utils import pybyte
@@ -233,6 +240,8 @@ async def send_node_status(query: CallbackQuery, day):
 # 使用指令查看节点信息
 @Client.on_message(filters.command("vb"))
 async def view_bandwidth(_, message: Message):
+    if member and message.chat.id not in member:
+        return
     chat_data["node_status_mode"] = "command"
     chat_data["packUp"] = True
     chat_data[f"cd_{message.chat.id}"] = {}

@@ -37,6 +37,7 @@ def z_url():
 
 # user
 admin = config["user"]["admin"]
+member = config["user"]["member"]
 alist_host = config["user"]["alist_host"].removesuffix("/")
 alist_web = config["user"]["alist_web"].removesuffix("/")
 alist_token = config["user"]["alist_token"]
