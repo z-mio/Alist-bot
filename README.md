@@ -235,6 +235,7 @@ bot:
     z_url: false
 user:
   admin: 123456789 # 管理员用户id，可通过@get_id_bot获取id
+  member: []  # 允许使用bot的 用户、群组、频道（群组和频道id需要加上-100）可通过 https://t.me/getletbot 获取id。 留空为所有人可用
   alist_host: http://127.0.0.1:5244 # alist ip:port或alist域名，一般填域名即可
   alist_web: "https://" # 你的alist域名
   alist_token: "" # alist token
@@ -279,6 +280,7 @@ bot:
     z_url: false
 user:
   admin: 123456789 # 管理员用户id，可通过@get_id_bot获取id
+  member: []  # 允许使用bot的 用户、群组、频道（群组和频道id需要加上-100）可通过 https://t.me/getletbot 获取id。 留空为所有人可用
   alist_host: http://127.0.0.1:5244 # alist ip:port或alist域名，一般填域名即可
   alist_web: "https://" # 你的alist域名
   alist_token: "" # alist token
