@@ -92,6 +92,7 @@ async def menu(_, message: Message):
         BotCommand(command="bc", description="备份Alist配置"),
         BotCommand(command="sbt", description="设置定时备份"),
         BotCommand(command="sr", description="随机推荐设置"),
+        BotCommand(command="od", description="离线下载"),
         BotCommand(command="help", description="查看帮助"),
     ]
 

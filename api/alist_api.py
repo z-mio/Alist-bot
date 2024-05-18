@@ -153,3 +153,39 @@ class AListAPI:
         url = f"{alist_host}/api/admin/driver/list"
         header = {"Authorization": alist_token}
         return await AListAPI._send_request("GET", url, headers=header)
+
+    # 获取离线下载工具
+    @staticmethod
+    async def get_offline_download_tools():
+        url = f"{alist_host}/api/public/offline_download_tools"
+        header = {"Authorization": alist_token}
+        return await AListAPI._send_request("GET", url, headers=header)
+
+    # 离线下载
+    @staticmethod
+    async def offline_download(urls, tool, path, delete_policy):
+        url = f"{alist_host}/api/fs/add_offline_download"
+        header = {"Authorization": alist_token}
+        body = {"delete_policy": delete_policy, "path": path, "tool": tool, "urls": urls}
+        return await AListAPI._send_request("POST", url, headers=header, json=body)
+
+    # 获取离线下载未完成任务
+    @staticmethod
+    async def get_offline_download_undone_task():
+        url = f"{alist_host}/api/admin/task/offline_download/undone"
+        header = {"Authorization": alist_token}
+        return await AListAPI._send_request("GET", url, headers=header)
+
+    # 获取离线下载已完成任务
+    @staticmethod
+    async def get_offline_download_done_task():
+        url = f"{alist_host}/api/admin/task/offline_download/done"
+        header = {"Authorization": alist_token}
+        return await AListAPI._send_request("GET", url, headers=header)
+
+    # 清空离线下载已完成任务（包含成功/失败）
+    @staticmethod
+    async def clear_offline_download_done_task():
+        url = f"{alist_host}/api/admin/task/offline_download/clear_done"
+        header = {"Authorization": alist_token}
+        return await AListAPI._send_request("POST", url, headers=header)
