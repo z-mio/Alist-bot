@@ -5,3 +5,4 @@ Pyrogram
 TgCrypto
 loguru
 httpx
+prettytable
