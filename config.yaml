@@ -1,0 +1,15 @@
+proxy:
+  hostname: 127.0.0.1
+  port: 7890
+  scheme: http
+user:
+  admin:
+  api_id:
+  api_hash:
+  bot_token:
+  member: [ ]
+alist:
+  alist_host: http://127.0.0.1:5244
+  alist_web: http://127.0.0.1:5244
+  alist_token: alist-
+backup_time: '0'
