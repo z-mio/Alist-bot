@@ -1,8 +1,8 @@
 cronjob:
   auto_switch_nodes: false
-  bandwidth_push: false
-  chat_id:
+  bandwidth_push: true
+  chat_id: []
   status_push: false
   storage_mgmt: false
-  time: '50 23 * * *'
-node:
+  time: 50 23 * * *
+nodes: []

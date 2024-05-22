@@ -9,15 +9,9 @@ from concurrent.futures import ThreadPoolExecutor
 from pyrogram import filters, Client
 from pyrogram.types import Message
 
-from api.alist_api import AListAPI
-from config.config import (
-    image_upload_path,
-    alist_web,
-    image_config,
-    write_config,
-    DOWNLOADS_PATH,
-)
-from tool.utils import is_admin
+from api.alist.alist_api import alist
+from config.config import img_cfg, DOWNLOADS_PATH, bot_cfg
+from tools.filters import is_admin
 
 # 4线程
 thread_pool = ThreadPoolExecutor(max_workers=4)
@@ -47,7 +41,7 @@ async def download_upload(message: Message):
     # 上传到alist
     await msg.edit(text="📤上传图片中...", disable_web_page_preview=False)
     time.sleep(random.uniform(0.01, 0.2))
-    await AListAPI.upload(file_name_path, image_upload_path(), file_name)
+    await alist.upload(file_name_path, img_cfg.image_upload_path, file_name)
 
     # 删除图片
     os.remove(file_name_path)
@@ -55,16 +49,16 @@ async def download_upload(message: Message):
     # 刷新列表
     await msg.edit(text="🔄刷新列表中...", disable_web_page_preview=False)
     time.sleep(random.uniform(0.01, 0.2))
-    await AListAPI.refresh_list(image_upload_path(), 1)
+    await alist.fs_list(img_cfg.image_upload_path, 1)
     # 获取文件信息
     await msg.edit(text="⏳获取链接中...", disable_web_page_preview=False)
     time.sleep(random.uniform(0.01, 0.2))
-    get_url = await AListAPI.fs_get(f"{image_upload_path()}/{file_name}")
-    image_url = get_url["data"]["raw_url"]  # 直链
+    get_url = await alist.fs_get(f"{img_cfg.image_upload_path}/{file_name}")
+    image_url = get_url.data.raw_url  # 直链
 
     text = f"""
 图片名称：<code>{file_name}</code>
-图片链接：<a href="{alist_web}/{image_upload_path()}/{file_name}">打开图片</a>
+图片链接：<a href="{bot_cfg.alist_web}/{img_cfg.image_upload_path}/{file_name}">打开图片</a>
 图片直链：<a href="{image_url}">下载图片</a>
 Markdown：
 `![{file_name}]({image_url})`
@@ -79,11 +73,11 @@ Markdown：
 async def single_mode(_, message: Message):
     # 检测是否添加了说明
     if caption := message.caption:
-        image_config["image_upload_path"] = None if caption == "关闭" else str(caption)
-        write_config("config/image_cfg.yaml", image_config)
+        img_cfg.image_upload_path = None if caption == "关闭" else str(caption)
     # 开始运行
-    if image_config["image_upload_path"]:
+    if img_cfg.image_upload_path:
         # 添加任务到线程池
+        # await download_upload(message)
         thread_pool.submit(asyncio.run, download_upload(message))
     else:
         text = """

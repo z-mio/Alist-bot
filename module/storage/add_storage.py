@@ -10,7 +10,7 @@ from pyrogram.types import (
     Message,
 )
 
-from api.alist_api import AListAPI
+from api.alist.alist_api import alist
 from config.config import chat_data
 from module.storage.storage import (
     st_return,
@@ -23,7 +23,8 @@ from module.storage.storage import (
     storage_config,
     user_cfg,
 )
-from tool.utils import translate_key, is_admin
+from tools.filters import is_admin
+from tools.utils import translate_key
 
 
 def _ns_a_filter(_, __, ___):
@@ -72,8 +73,8 @@ async def ns_re_list_mode_b_callback(client: Client, _):
 # 发送 添加存储 按钮列表
 @Client.on_callback_query(filters.regex(r"^st_ns$"))
 async def ns(_, __):
-    r = await AListAPI.get_driver()
-    stj_key = list(r["data"].keys())
+    r = await alist.driver_list()
+    stj_key = list(r.data.keys())
     ns_storage_list = translate_key(stj_key, text_dict["driver"])  # 支持添加的存储列表
     ns_button_list.clear()
 
@@ -109,7 +110,8 @@ async def ns_mode(_, query: CallbackQuery):  # 支持添加的存储列表
         [InlineKeyboardButton("↩️返回存储列表", callback_data="ns_re_list")],
     ]
     await chat_data["storage_menu_button"].edit(
-        text=f"<b>选择的存储：{name}</b>\n选择模式：", reply_markup=InlineKeyboardMarkup(button)
+        text=f"<b>选择的存储：{name}</b>\n选择模式：",
+        reply_markup=InlineKeyboardMarkup(button),
     )
 
 
@@ -119,7 +121,7 @@ async def ns_mode_a(_, __):
     chat_data["ns_a"] = True
     text, common_dict_json = await storage_config(name)
     await chat_data["storage_menu_button"].edit(
-        text=f"""<b>选择的存储：{name}</b>\n<code>{str(text)}</code>\n*为必填，如果有默认值则可不填\n请修改配置后发送""",
+        text=f"""<b>选择的存储：{name}</b>\n```存储配置\n{text}```\n*为必填，如果有默认值则可不填\n请修改配置后发送""",
         reply_markup=InlineKeyboardMarkup(
             [[InlineKeyboardButton("↩️返回存储列表", callback_data="ns_re_list")]]
         ),
@@ -149,9 +151,9 @@ async def ns_mode_b(_, query: CallbackQuery):
     ns_new_b_list.clear()
     message_text_list.clear()
     chat_data["ns_b"] = True
-    text, common_dict_json = await storage_config(name)
+    text = (await storage_config(name))[0]
     await chat_data["storage_menu_button"].edit(
-        f"""<b>选择的存储：{name}</b>\n<code>{str(text)}</code>\n*为必填，如果有默认值则可不填\n请修改配置后发送""",
+        f"<b>选择的存储：{name}</b>\n```存储配置\n{text}```\n*为必填，如果有默认值则可不填\n请修改配置后发送",
     )
     ns_mode_b_message_2 = await query.message.reply(
         text="请发送存储配置，注意挂载路径不要重复",
@@ -185,47 +187,72 @@ async def ns_new_a(_, message: Message):
             text=text,
             reply_markup=InlineKeyboardMarkup(
                 [
-                    [InlineKeyboardButton("🔄重新添加", callback_data="ns_re_ns_mode_a")],
+                    [
+                        InlineKeyboardButton(
+                            "🔄重新添加", callback_data="ns_re_ns_mode_a"
+                        )
+                    ],
                     [InlineKeyboardButton("↩️︎返回存储管理", callback_data="ns_re_menu")],
                 ]
             ),
         )
     else:
-        ns_body = remove_quotes(st_cfg)
-        ns_json = await AListAPI.storage_create(ns_body)  # 新建存储
-        if ns_json["code"] == 200:
+        ns_json = await alist.storage_create(remove_quotes(st_cfg))  # 新建存储
+        if ns_json.code == 200:
             await message_tj.edit(
                 text=f"{name}添加成功！",
                 reply_markup=InlineKeyboardMarkup(
-                    [[InlineKeyboardButton("↩️返回存储管理", callback_data="ns_re_menu")]]
+                    [
+                        [
+                            InlineKeyboardButton(
+                                "↩️返回存储管理", callback_data="ns_re_menu"
+                            )
+                        ]
+                    ]
                 ),
             )
-        elif ns_json["code"] == 500:
-            storage_id = str(ns_json["data"]["id"])
-            ns_get_json = await AListAPI.storage_get(storage_id)  # 查询指定存储信息
+        elif ns_json.code == 500:
+            storage_id = str(ns_json.data["id"])
+            st_info = await alist.storage_get(storage_id)  # 查询指定存储信息
+            ns_up_json = await alist.storage_update(st_info.data)  # 更新存储
 
-            ns_update_json = ns_get_json["data"]
-            ns_up_json = await AListAPI.storage_update(ns_update_json)  # 更新存储
-
-            if ns_up_json["code"] == 200:
+            if ns_up_json.code == 200:
                 await message_tj.edit(
                     text=f"{name}添加成功！",
                     reply_markup=InlineKeyboardMarkup(
-                        [[InlineKeyboardButton("↩️返回存储管理", callback_data="ns_re_menu")]]
+                        [
+                            [
+                                InlineKeyboardButton(
+                                    "↩️返回存储管理", callback_data="ns_re_menu"
+                                )
+                            ]
+                        ]
                     ),
                 )
             else:
                 await message_tj.edit(
                     text=name + "添加失败！\n——————————\n" + ns_up_json["message"],
                     reply_markup=InlineKeyboardMarkup(
-                        [[InlineKeyboardButton("↩️返回存储管理", callback_data="ns_re_menu")]]
+                        [
+                            [
+                                InlineKeyboardButton(
+                                    "↩️返回存储管理", callback_data="ns_re_menu"
+                                )
+                            ]
+                        ]
                     ),
                 )
         else:
             await message_tj.edit(
                 text=name + "添加失败！\n——————————\n" + ns_json["message"],
                 reply_markup=InlineKeyboardMarkup(
-                    [[InlineKeyboardButton("↩️返回存储管理", callback_data="ns_re_menu")]]
+                    [
+                        [
+                            InlineKeyboardButton(
+                                "↩️返回存储管理", callback_data="ns_re_menu"
+                            )
+                        ]
+                    ]
                 ),
             )
 
@@ -316,9 +343,9 @@ async def ns_r(client: Client, message: Union[Message, CallbackQuery]):
         [InlineKeyboardButton("🎉开始新建", callback_data="ns_sp")],
     ]
     ns_r_text = await client.edit_message_text(
-        chat_id=message.chat.id
-        if isinstance(message, Message)
-        else message.message.chat.id,
+        chat_id=(
+            message.chat.id if isinstance(message, Message) else message.message.chat.id
+        ),
         message_id=chat_data["ns_mode_b_message_2_message_id"],
         text="已添加的配置：\n" + str(text),
         reply_markup=InlineKeyboardMarkup(button),
@@ -341,38 +368,44 @@ async def ns_new_b_start(client: Client, query: CallbackQuery):
     for i in range(len(ns_new_b_list)):
         st_cfg = ns_new_b_list[i]
         ns_body = remove_quotes(st_cfg)
-        ns_json = await AListAPI.storage_create(ns_body)  # 新建存储
+        ns_json = await alist.storage_create(ns_body)  # 新建存储
         mount_path = ns_new_b_list[i]["mount_path"]
-        if ns_json["code"] == 200:
+        if ns_json.code == 200:
             message_b.append(f"`{mount_path}` | 添加成功！")
         elif (
-                ns_json["code"] == 500
-                and "but storage is already created" in ns_json["data"]
+            ns_json.code == 500 and "but storage is already created" in ns_json.message
         ):  # 初始化存储失败，但存储已经创建
-            storage_id = str(ns_json["data"]["id"])
-            ns_get_json = await AListAPI.storage_get(storage_id)  # 查询指定存储信息
-            ns_update_json = ns_get_json["data"]
-            ns_up_json = await AListAPI.storage_update(ns_update_json)  # 更新存储
-            if ns_up_json["code"] == 200:
+            storage_id = str(ns_json.data["id"])
+            st_info = await alist.storage_get(storage_id)  # 查询指定存储信息
+            ns_up_json = await alist.storage_update(st_info.data)  # 更新存储
+            if ns_up_json.code == 200:
                 message_b.append(f"`{mount_path}` | 添加成功！")
             else:
                 message_b.append(
                     f"{mount_path} 添加失败！\n——————————\n{ns_up_json}\n——————————"
                 )
-        elif ns_json["code"] == 500 and "1062 (23000)" in ns_json["data"]:  # 存储路径已存在
+        elif (
+            ns_json.code == 500 and "1062 (23000)" in ns_json.message
+        ):  # 存储路径已存在
             message_b.append(
-                f"{mount_path} 添加失败！\n——————————\n{ns_json['message']}\n——————————"
+                f"{mount_path} 添加失败！\n——————————\n{ns_json.message}\n——————————"
             )
         else:
             message_b.append(
-                f"{mount_path} 添加失败！\n——————————\n{ns_json['message']}\n——————————"
+                f"{mount_path} 添加失败！\n——————————\n{ns_json.message}\n——————————"
             )
-        textt = f"{str(message_b[i])}\n"
+        textt = f"{message_b[i]}\n"
         text += textt
         ns_new_bb_start = await ns_b_message_tj.edit(
             text=text,
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("↩️︎返回存储管理", callback_data="ns_re_new_b_menu")]]
+                [
+                    [
+                        InlineKeyboardButton(
+                            "↩️︎返回存储管理", callback_data="ns_re_new_b_menu"
+                        )
+                    ]
+                ]
             ),
         )
         chat_data["ns_new_b_start_chat_id"] = ns_new_bb_start.chat.id

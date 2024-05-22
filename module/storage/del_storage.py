@@ -4,7 +4,7 @@ from pyrogram.types import (
     CallbackQuery,
 )
 
-from api.alist_api import AListAPI
+from api.alist.alist_api import alist
 from config.config import chat_data
 from module.storage.storage import get_storage, mount_path, driver_id, button_list
 
@@ -22,7 +22,7 @@ async def ds(_, __):
 @Client.on_callback_query(filters.regex("^ds"))
 async def ds_callback(_, query: CallbackQuery):
     bvj = int(query.data.strip("ds"))
-    await AListAPI.storage_delete(driver_id[bvj])
+    await alist.storage_delete(driver_id[bvj])
     st_id = mount_path[bvj]
     await get_storage(callback_data_pr="ds")
     await chat_data["storage_menu_button"].edit(

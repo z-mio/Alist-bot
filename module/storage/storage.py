@@ -11,10 +11,10 @@ from pyrogram.types import (
     Message,
 )
 
-from api.alist_api import AListAPI
-from config.config import storage_cfg, chat_data
-from tool.utils import is_admin
-from tool.utils import translate_key
+from api.alist.alist_api import alist
+from config.config import st_cfg, chat_data
+from tools.filters import is_admin
+from tools.utils import translate_key
 
 mount_path = []  # 存储路径
 disabled = []  # 存储是否禁用
@@ -23,14 +23,14 @@ ns_button_list = []  # 支持添加的存储的按钮
 button_list = []
 common_dict = {}  # 新建存储——新建存储的json模板
 
-with open("config/cn_dict.json", "r", encoding="utf-8") as c:
+with open("module/storage/cn_dict.json", "r", encoding="utf-8") as c:
     text_dict = json.load(c)
 
 #####################################################################################
 #####################################################################################
 # 返回菜单
 return_button = [
-    InlineKeyboardButton("↩️返回存储管理", callback_data="st_return"),
+    InlineKeyboardButton("↩️返回存储管理", callback_data="re_st_menu"),
     InlineKeyboardButton("❌关闭菜单", callback_data="st_close"),
 ]
 
@@ -61,7 +61,7 @@ vs_all_button = [
 # 按钮回调
 #####################################################################################
 # 返回存储管理菜单
-@Client.on_callback_query(filters.regex(r"^st_return$"))
+@Client.on_callback_query(filters.regex(r"^re_st_menu$"))
 async def st_return_callback(_, __):
     chat_data["st_storage_cfg_amend"] = False
     await st_return()
@@ -79,15 +79,14 @@ async def st_close(_, __):
 
 async def st_aaa():
     try:
-        sl_json = await AListAPI.storage_list()
+        st_info_list = (await alist.storage_list()).data
     except Exception:
         text = "连接Alist超时，请检查网站状态"
         logger.error(text)
         return text
     else:
-        zcc = len(sl_json["data"]["content"])
-        content_list = sl_json["data"]["content"]
-        jysl = sum(bool(item["disabled"]) for item in content_list)
+        zcc = len(st_info_list)
+        jysl = sum(bool(item.disabled) for item in st_info_list)
         qysl = zcc - jysl
         return f"存储数量：{zcc}\n启用：{qysl}\n禁用：{jysl}"
 
@@ -112,14 +111,14 @@ async def st_return():
 @Client.on_callback_query(filters.regex(r"^st_storage_amend$"))
 async def st_storage_amend(_, __):
     t = translate_key(
-        translate_key(storage_cfg()["storage"], text_dict["common"]),
+        translate_key(st_cfg.storage, text_dict["common"]),
         text_dict["additional"],
     )
     t = json.dumps(t, indent=4, ensure_ascii=False)
 
     button = [
         [InlineKeyboardButton("🔧修改配置", callback_data="st_storage_cfg_amend")],
-        [InlineKeyboardButton("↩️返回存储管理", callback_data="st_return")],
+        [InlineKeyboardButton("↩️返回存储管理", callback_data="re_st_menu")],
     ]
 
     await chat_data["storage_menu_button"].edit(
@@ -134,15 +133,13 @@ async def st_storage_amend(_, __):
 # 自动排序
 @Client.on_callback_query(filters.regex(r"auto_sorting"))
 async def auto_sorting(_, query: CallbackQuery):
-    alist = AListAPI()
-    st_ = await alist.storage_list()
-    content: list = st_["data"]["content"]
-    content.sort(key=lambda x: x["mount_path"])
+    st_list = (await alist.storage_list()).data
+    st_list.sort(key=lambda x: x.mount_path)
     await query.message.edit_text("排序中...")
 
     task = []
-    for i, v in enumerate(content):
-        v["order"] = i
+    for i, v in enumerate(st_list):
+        v.order = i
         task.append(alist.storage_update(v))
     results = await asyncio.gather(*task, return_exceptions=True)
     for result in results:
@@ -214,12 +211,12 @@ async def get_storage(callback_data_pr):
     driver_id.clear()
     button_list.clear()
 
-    vs_data = await AListAPI.storage_list()  # 获取存储列表
+    vs_data = (await alist.storage_list()).data  # 获取存储列表
 
-    for item in vs_data["data"]["content"]:
-        mount_path.append(item["mount_path"])
-        disabled.append(item["disabled"])
-        driver_id.append(item["id"])
+    for item in vs_data:
+        mount_path.append(item.mount_path)
+        disabled.append(item.disabled)
+        driver_id.append(item.id)
 
     for button_js in range(len(mount_path)):
         disabled_a = "❌" if disabled[button_js] else "✅"
@@ -271,8 +268,7 @@ async def storage_config(driver_name):
     default_storage_config = []  # 默认存储配置
     default_storage_config_message = []  # 发给用户的模板
     common_dict["driver"] = driver_name  # 将驱动名称加入字典
-    stj = await AListAPI.get_driver()
-    stj = stj["data"]
+    stj = (await alist.driver_list()).data
 
     def common_c(vl):
         for i in range(len(stj[storage_name][vl])):
@@ -290,15 +286,18 @@ async def storage_config(driver_name):
             if vl == "common":
                 common_dict[stj_name] = stj_default
             else:
-                additional_dict[stj_name] = stj_default  # 将存储配置名称和默认值写入字典
+                additional_dict[stj_name] = (
+                    stj_default  # 将存储配置名称和默认值写入字典
+                )
             sn = text_dict[vl].get(stj_name, stj_name)
             default_storage_config.append(f"{sn} = {stj_default}")
+            storage = st_cfg.storage
             try:
-                for k in storage_cfg()["storage"].keys():
+                for k in storage.keys():
                     if k in text_dict["common"].keys():
-                        common_dict[k] = storage_cfg()["storage"][k]
+                        common_dict[k] = storage[k]
                     else:
-                        additional_dict[k] = storage_cfg()["storage"][k]
+                        additional_dict[k] = storage[k]
             except (AttributeError, KeyError):
                 ...
             if vl == "common":

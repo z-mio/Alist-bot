@@ -11,101 +11,128 @@ from pyrogram.types import (
     CallbackQuery,
 )
 
-from api.alist_api import AListAPI
-from config.config import nodee, cloudflare_cfg, chat_data, write_config, admin
-from module.cloudflare.cloudflare import check_node_status, get_node_status, r_cf_menu
-from tool.scheduler_manager import aps
+from api.alist.alist_api import alist
+from api.alist.base.storage.get import StorageInfo
+from bot import run_fastapi
+from config.config import cf_cfg, chat_data, bot_cfg, plb_cfg
+from module.cloudflare.cloudflare import build_node_info, r_cf_menu
+from module.cloudflare.utile import check_node_status, NodeStatus, re_remark
+from tools.scheduler_manager import aps
+
+_D = {
+    "auto_switch_nodes": "自动切换节点",
+    "status_push": "节点状态推送",
+    "storage_mgmt": "自动存储管理",
+    "bandwidth_push": "每日流量统计",
+    "proxy_load_balance": "代理负载均衡",
+}
+
+
+def switch(client: Client, enable: bool, option, job_id, mode):
+    setattr(cf_cfg, option, enable)
+    logger.info(f"已{'开启' if enable else '关闭'}:{_D[option]}")
+
+    job_functions = {
+        "cronjob_bandwidth_push": send_cronjob_bandwidth_push,
+        "cronjob_status_push": send_cronjob_status_push,
+    }
+
+    if (
+        not any([cf_cfg.status_push, cf_cfg.storage_mgmt, cf_cfg.auto_switch_nodes])
+        or option == "bandwidth_push"
+    ):
+        logger.info("已关闭:节点监控")
+        aps.pause_job(job_id)
+    elif enable:
+        aps.resume_job(job_id=job_id)
+        args = (
+            {"trigger": CronTrigger.from_crontab(cf_cfg.time)}
+            if mode == 0
+            else {"trigger": "interval", "seconds": 60}
+        )
+        aps.add_job(
+            func=job_functions[job_id],
+            args=[client],
+            job_id=job_id,
+            **args,
+        )
 
 
 async def toggle_auto_management(
-    client: Client, message: CallbackQuery, option, job_id, mode
+    client: Client, cq: CallbackQuery, option, job_id, mode
 ):
-    query = message.data
-    if query == f"{option}_off":
-        cloudflare_cfg["cronjob"][option] = False
-        logger.info(f"已关闭{option}")
-        cc = cloudflare_cfg["cronjob"]
-        abc = all(
-            not cc[key] for key in ("status_push", "storage_mgmt", "auto_switch_nodes")
-        )
-        if abc or option == "bandwidth_push":
-            logger.info("节点监控已关闭")
-            aps.pause_job(job_id)
-    elif query == f"{option}_on":
-        cloudflare_cfg["cronjob"][option] = True
-        logger.info(f"已开启{option}")
-        aps.resume_job(job_id=job_id)
-        if mode == 0:
-            aps.add_job(
-                func=send_cronjob_bandwidth_push,
-                args=[client],
-                trigger=CronTrigger.from_crontab(cloudflare_cfg["cronjob"]["time"]),
-                job_id=job_id,
-            )
-        elif mode == 1:
-            aps.add_job(
-                func=send_cronjob_status_push,
-                args=[client],
-                trigger="interval",
-                job_id=job_id,
-                seconds=60,
-            )
-    write_config("config/cloudflare_cfg.yaml", cloudflare_cfg)
-    await r_cf_menu(message)
+    is_option_on = cq.data == f"{option}_on"
+    switch(client, is_option_on, option, job_id, mode)
+    await r_cf_menu(cq)
 
 
 # 按钮回调 节点状态
 @Client.on_callback_query(filters.regex("^status_push"))
-async def status_push(client: Client, message: CallbackQuery):
-    await toggle_auto_management(
-        client, message, "status_push", "cronjob_status_push", 1
-    )
+async def status_push(cli: Client, cq: CallbackQuery):
+    await toggle_auto_management(cli, cq, "status_push", "cronjob_status_push", 1)
 
 
 # 按钮回调 每日带宽统计
 @Client.on_callback_query(filters.regex("^bandwidth_push"))
-async def bandwidth_push(client: Client, message: CallbackQuery):
-    await toggle_auto_management(
-        client, message, "bandwidth_push", "cronjob_bandwidth_push", 0
-    )
+async def bandwidth_push(cli: Client, cq: CallbackQuery):
+    await toggle_auto_management(cli, cq, "bandwidth_push", "cronjob_bandwidth_push", 0)
 
 
 # 按钮回调 自动存储管理
 @Client.on_callback_query(filters.regex("^storage_mgmt"))
-async def storage_mgmt(client: Client, message: CallbackQuery):
-    await toggle_auto_management(
-        client, message, "storage_mgmt", "cronjob_status_push", 1
-    )
+async def storage_mgmt(cli: Client, cq: CallbackQuery):
+    await toggle_auto_management(cli, cq, "storage_mgmt", "cronjob_status_push", 1)
 
 
 # 按钮回调 自动切换节点
 @Client.on_callback_query(filters.regex("^auto_switch_nodes"))
-async def auto_switch_nodes(client: Client, message: CallbackQuery):
-    await toggle_auto_management(
-        client, message, "auto_switch_nodes", "cronjob_status_push", 1
-    )
+async def auto_switch_nodes(cli: Client, cq: CallbackQuery):
+    await toggle_auto_management(cli, cq, "auto_switch_nodes", "cronjob_status_push", 1)
+
+
+# 按钮回调 代理负载均衡
+@Client.on_callback_query(filters.regex("^proxy_load_balance"))
+async def proxy_load_balance_switch(_, cq: CallbackQuery):
+    plb_cfg.enable = not plb_cfg.enable
+    if plb_cfg.enable:
+        run_fastapi()
+    logger.info(f"已{'开启' if plb_cfg.enable else '关闭'}:代理负载均衡")
+    await r_cf_menu(cq)
 
 
 # 带宽通知定时任务
 async def send_cronjob_bandwidth_push(app):
-    if nodee():
-        vv = await get_node_status(0)
+    if cf_cfg.nodes:
+        ni = await build_node_info(0)
         text = "今日流量统计"
-        for i in cloudflare_cfg["cronjob"]["chat_id"]:
+        for i in cf_cfg.chat_id:
             await app.send_message(
-                chat_id=i, text=text, reply_markup=InlineKeyboardMarkup([vv[1], vv[2]])
+                chat_id=i,
+                text=text,
+                reply_markup=InlineKeyboardMarkup([ni.button_b, ni.button_c]),
             )
+
+
+def start_bandwidth_push(app):
+    if cf_cfg.bandwidth_push:
+        aps.add_job(
+            func=send_cronjob_bandwidth_push,
+            args=[app],
+            trigger=CronTrigger.from_crontab(cf_cfg.time),
+            job_id="cronjob_bandwidth_push",
+        )
+        logger.info("带宽通知已启动")
 
 
 # 节点状态通知定时任务
 async def send_cronjob_status_push(app: Client):
-    if not nodee():
+    if not cf_cfg.nodes:
         return
 
-    nodes = [value["url"] for value in nodee()]
+    nodes = [value.url for value in cf_cfg.nodes]
     task = [check_node_status(node) for node in nodes]
     # 全部节点
-    results = await asyncio.gather(*task)
+    results = list(await asyncio.gather(*task))
     # 可用节点
     available_nodes = await returns_the_available_nodes(results)
 
@@ -123,11 +150,23 @@ async def send_cronjob_status_push(app: Client):
         text = "\n\n".join(flat_results)
         logger.info(text)
         await app.send_message(
-            chat_id=admin,
+            chat_id=bot_cfg.admin,
             text=text,
             disable_web_page_preview=True,
             parse_mode=ParseMode.HTML,
         )
+
+
+def start_status_push(app):
+    if any([cf_cfg.status_push, cf_cfg.storage_mgmt, cf_cfg.auto_switch_nodes]):
+        aps.add_job(
+            func=send_cronjob_status_push,
+            args=[app],
+            trigger="interval",
+            job_id="cronjob_status_push",
+            seconds=60,
+        )
+        logger.info("节点监控已启动")
 
 
 # 检测全部节点状态
@@ -159,71 +198,57 @@ async def failed_node_management(
 
     # 自动管理
     try:
-        st = await AListAPI.storage_list()
+        st = (await alist.storage_list()).data
     except Exception:
         logger.error("自动管理存储错误：获取存储列表失败")
     else:
-        task = [
-            manage_storage(dc, node, status_code, available_nodes)
-            for dc in st["data"]["content"]
-        ]
+        task = [manage_storage(dc, node, status_code, available_nodes) for dc in st]
         return [i for i in await asyncio.gather(*task, return_exceptions=True) if i]
 
 
-async def manage_storage(dc, node, status_code, available_nodes) -> str:
+async def manage_storage(dc: StorageInfo, node, status_code, available_nodes) -> str:
     # 如果代理url等于node，且存储开启了代理
     proxy_url = f"https://{node}"
-    use_proxy = dc.get("webdav_policy", "") == "use_proxy_url" or dc.get(
-        "web_proxy", False
-    )
-    if dc.get("down_proxy_url") != proxy_url or not use_proxy:
+    use_proxy = dc.webdav_policy == "use_proxy_url" or dc.web_proxy
+    if dc.down_proxy_url != proxy_url or not use_proxy:
         return ""
 
-    alist = AListAPI()
     # 节点正常且存储关闭
-    if status_code == 200 and dc["disabled"]:
-        await alist.storage_enable(dc["id"])
-        return f'🟢|<code>{node}</code>|已开启存储:\n<code>{dc["mount_path"]}</code>'
+    if status_code == 200 and dc.disabled:
+        await alist.storage_enable(dc.id)
+        return f"🟢|<code>{node}</code>|已开启存储:\n<code>{dc.mount_path}</code>"
     # 节点失效且存储开启
-    if status_code != 200 and not dc["disabled"]:
+    if status_code != 200 and not dc.disabled:
         # 开启自动切换节点切有可用节点
-        if cloudflare_cfg["cronjob"]["auto_switch_nodes"] and available_nodes:
+        if cf_cfg.auto_switch_nodes and available_nodes:
             random_node = random.choice(available_nodes)
-            dc["down_proxy_url"] = random_node
+            dc.down_proxy_url = random_node
             d = random_node.replace("https://", "")
 
-            if "节点：" in dc["remark"]:
-                dc["remark"] = "\n".join(
-                    [
-                        f"节点：{d}" if "节点：" in line else line
-                        for line in dc["remark"].split("\n")
-                    ]
-                )
-            else:
-                dc["remark"] = f"节点：{d}\n{dc['remark']}"
+            dc.remark = re_remark(dc.remark, d)
 
             await alist.storage_update(dc)
-            return f'🟡|<code>{dc["mount_path"]}</code>\n已自动切换节点: <code>{node}</code> >> <code>{d}</code>'
-        elif cloudflare_cfg["cronjob"]["storage_mgmt"]:
-            await alist.storage_disable(dc["id"])
-            return f'🔴|<code>{node}</code>|已关闭存储:\n<code>{dc["mount_path"]}</code>'
+            return f"🟡|<code>{dc.mount_path}</code>\n已自动切换节点: <code>{node}</code> >> <code>{d}</code>"
+        elif cf_cfg.storage_mgmt:
+            await alist.storage_disable(dc.id)
+            return f"🔴|<code>{node}</code>|已关闭存储:\n<code>{dc.mount_path}</code>"
 
 
 # 筛选出可用节点
-async def returns_the_available_nodes(results) -> list:
+async def returns_the_available_nodes(results: list[NodeStatus]) -> list:
     """
     筛选出可用节点，移除已用节点
     :param results:
     :return:
     """
     # 可用节点
-    node_pool = [f"https://{node}" for node, result in results if result == 200]
+    node_pool = [f"https://{ns.url}" for ns in results if ns.status == 200]
     # 已经在使用的节点
-    sl = await AListAPI.storage_list()
+    sl = (await alist.storage_list()).data
     used_node = [
-        node["down_proxy_url"]
-        for node in sl["data"]["content"]
-        if node["webdav_policy"] == "use_proxy_url" or node["web_proxy"]
+        node.down_proxy_url
+        for node in sl
+        if node.webdav_policy == "use_proxy_url" or node.web_proxy
     ]
     # 将已用的节点从可用节点中删除，删除后没有节点了就重复使用节点
     return [x for x in node_pool if x not in used_node] or node_pool
@@ -235,8 +260,8 @@ async def notify_status_change(app: Client, node, status_code):
     text = t_l.get(status_code, f"⭕️|<code>{node}</code>|故障")
     logger.info(text) if status_code == 200 else logger.warning(text)
 
-    if cloudflare_cfg["cronjob"]["status_push"]:
-        for chat_id in cloudflare_cfg["cronjob"]["chat_id"]:
+    if cf_cfg.status_push:
+        for chat_id in cf_cfg.chat_id:
             try:
                 await app.send_message(
                     chat_id=chat_id, text=text, parse_mode=ParseMode.HTML

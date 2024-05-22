@@ -12,18 +12,11 @@ from pyrogram.types import (
     CallbackQuery,
 )
 
-from api.alist_api import AListAPI
-from config.config import (
-    chat_data,
-    roll_disable,
-    path,
-    write_config,
-    roll_cfg,
-    alist_web, member,
-)
+from api.alist.alist_api import alist
+from config.config import chat_data, roll_cfg, bot_cfg
 from module.roll.random_kaomoji import random_kaomoji
-from tool.utils import is_admin
-from tool.utils import pybyte
+from tools.filters import is_admin
+from tools.utils import pybyte
 
 return_button = [
     InlineKeyboardButton("↩️返回菜单", callback_data="sr_return"),
@@ -36,8 +29,8 @@ def btn():
         [
             InlineKeyboardButton("🛠修改配置", callback_data="edit_roll"),
             InlineKeyboardButton(
-                "✅随机推荐" if roll_disable() else "❎随机推荐",
-                callback_data="roll_off" if roll_disable() else "roll_on",
+                "✅随机推荐" if roll_cfg.roll_disable else "❎随机推荐",
+                callback_data="roll_off" if roll_cfg.roll_disable else "roll_on",
             ),
         ],
         [InlineKeyboardButton("❌关闭菜单", callback_data="sr_close")],
@@ -55,16 +48,16 @@ async def sr_menu(_, message: Message):
 # 随机推荐
 @Client.on_message(filters.command("roll"))
 async def roll(_, message: Message):
-    if member and message.chat.id not in member:
+    if bot_cfg.member and message.chat.id not in bot_cfg.member:
         return
-    if not roll_disable():
+    if not roll_cfg.roll_disable:
         return
     roll_str = " ".join(message.command[1:])
     if roll_str.replace("？", "?") == "?":
-        t = "\n".join(list(path().keys()))
+        t = "\n".join(list(roll_cfg.path.keys()))
         text = f"已添加的关键词：\n<code>{t}</code>"
         return await message.reply(text)
-    if path():
+    if roll_cfg.path:
         names, sizes, url = await generate(key=roll_str or "")
         text = f"""
 {random_kaomoji()}：<a href="{url}">{names}</a>
@@ -92,10 +85,12 @@ async def menu(_, query: CallbackQuery):
 # 修改配置按钮回调
 @Client.on_callback_query(filters.regex("edit_roll"))
 async def edit_roll(_, query: CallbackQuery):
-    j = json.dumps(path(), indent=4, ensure_ascii=False)
+    j = json.dumps(roll_cfg.path, indent=4, ensure_ascii=False)
     text = (
         f"""
-<code>{j}</code>
+```json
+{j}
+```
 
 
 修改后发送，格式为json
@@ -103,7 +98,7 @@ async def edit_roll(_, query: CallbackQuery):
 """
         if j != "null"
         else """
-<code>
+```json
 {
     "关键词": "路径",
     "slg": "/slg",
@@ -112,7 +107,7 @@ async def edit_roll(_, query: CallbackQuery):
         "/123"
     ]
 }
-</code>
+```
 
 修改后发送，格式为json
 一个关键词可以包含多个路径，使用列表格式
@@ -128,8 +123,7 @@ async def edit_roll(_, query: CallbackQuery):
 @Client.on_callback_query(filters.regex("^roll_"))
 async def roll_of(_, message):
     query = message.data
-    roll_cfg["roll_disable"] = query != "roll_off"
-    write_config("config/roll_cfg.yaml", roll_cfg)
+    roll_cfg.roll_disable = query != "roll_off"
     await chat_data["sr_menu"].edit(
         text=random_kaomoji(), reply_markup=InlineKeyboardMarkup(btn())
     )
@@ -147,13 +141,13 @@ edit_roll_filter = filters.create(_edit_roll_filter)
 async def change_setting(_, message: Message):
     msg = message.text
     try:
-        roll_cfg["path"] = json.loads(msg)
+        path = json.loads(msg)
     except Exception as e:
         await message.reply(text=f"错误：{str(e)}\n\n请修改后重新发送")
     else:
         await message.delete()
         chat_data["edit_roll"] = False
-        write_config("config/roll_cfg.yaml", roll_cfg)
+        roll_cfg.path = path
         await chat_data["sr_menu"].edit(
             text="修改成功", reply_markup=InlineKeyboardMarkup(btn())
         )
@@ -163,17 +157,17 @@ async def generate(key=""):
     # 使用os.urandom生成随机字节串作为种子
     random.seed(os.urandom(32))
 
-    values_list = list(path().values()) if key == "" else path()[key]
+    values_list = list(roll_cfg.path.values()) if key == "" else roll_cfg.path[key]
     r_path = get_random_value(values_list)
-    data = await AListAPI.refresh_list(r_path)
-    content = data["data"]["content"]
+    data = await alist.fs_list(r_path)
+    content = data.data["content"]
 
     selected_item = random.choice(content)
     name = selected_item["name"]
     size = selected_item["size"]
     get_path = f"{r_path}/{name}"
 
-    url = alist_web + get_path
+    url = bot_cfg.alist_web + get_path
     url = urllib.parse.quote(url, safe=":/")
     return name, pybyte(size), url
 

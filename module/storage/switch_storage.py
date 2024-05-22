@@ -3,7 +3,7 @@ import asyncio
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, CallbackQuery
 
-from api.alist_api import AListAPI
+from api.alist.alist_api import alist
 from config.config import chat_data
 from module.storage.storage import (
     get_storage,
@@ -28,7 +28,8 @@ async def vs(_, __):
     await get_storage(callback_data_pr="vs")
     insert_button()
     await chat_data["storage_menu_button"].edit(
-        text="点击开启/关闭存储\n存储列表：", reply_markup=InlineKeyboardMarkup(button_list)
+        text="点击开启/关闭存储\n存储列表：",
+        reply_markup=InlineKeyboardMarkup(button_list),
     )
 
 
@@ -39,14 +40,15 @@ async def vs_callback(_, query: CallbackQuery):
     storage_id = driver_id[bvj]
     if disabled[bvj]:
         of_t = "✅已开启存储："
-        await AListAPI.storage_enable(storage_id)
+        await alist.storage_enable(storage_id)
     else:
         of_t = "❌已关闭存储："
-        await AListAPI.storage_disable(storage_id)
+        await alist.storage_disable(storage_id)
     await get_storage(callback_data_pr="vs")
     insert_button()
     await chat_data["storage_menu_button"].edit(
-        text=f"{of_t}`{mount_path[bvj]}`", reply_markup=InlineKeyboardMarkup(button_list)
+        text=f"{of_t}`{mount_path[bvj]}`",
+        reply_markup=InlineKeyboardMarkup(button_list),
     )
 
 
@@ -54,7 +56,7 @@ async def vs_callback(_, query: CallbackQuery):
 @Client.on_callback_query(filters.regex(r"vs_offall|vs_onall"))
 async def vs_on_off_all(_, query: CallbackQuery):
     bvj = query.data
-    command = AListAPI.storage_enable if bvj == "vs_onall" else AListAPI.storage_disable
+    command = alist.storage_enable if bvj == "vs_onall" else alist.storage_disable
     action = "开启中..." if bvj == "vs_onall" else "关闭中..."
     await chat_data["storage_menu_button"].edit(
         text=action, reply_markup=InlineKeyboardMarkup(button_list)

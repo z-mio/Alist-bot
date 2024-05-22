@@ -1,0 +1,4 @@
+download_path: 
+download_strategy: delete_on_upload_succeed
+download_tool: SimpleHttp
+download_url:

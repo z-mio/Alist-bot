@@ -1,13 +1,12 @@
+import asyncio
 import datetime
 import itertools
 import math
 from typing import Union
+from urllib.parse import quote, unquote
 
 from croniter import croniter
-from pyrogram import filters
-from pyrogram.types import Message, CallbackQuery
-
-from config.config import admin
+from pyrogram import Client
 
 
 # 字节数转文件大小
@@ -36,7 +35,9 @@ def pybyte(size, dot=2):
 
 
 # 列表/字典key翻译，输入：待翻译列表/字典，翻译字典 输出：翻译后的列表/字典
-def translate_key(list_or_dict, translation_dict):  # sourcery skip: assign-if-exp
+def translate_key(
+    list_or_dict: list | dict, translation_dict: dict
+):  # sourcery skip: assign-if-exp
     if isinstance(list_or_dict, dict):
 
         def translate_zh(_key):
@@ -69,18 +70,6 @@ def translate_key(list_or_dict, translation_dict):  # sourcery skip: assign-if-e
     return new_dict_or_list
 
 
-async def __is_admin(_, __, update: Union[Message, CallbackQuery]) -> bool:
-    """
-    是管理员
-    :return:
-    """
-    user_id = update.from_user.id
-    return user_id == admin
-
-
-is_admin = filters.create(__is_admin)
-
-
 # 解析cron表达式
 def parse_cron(cron: str, ret_quantity: int = None) -> Union[str, list]:
     c = cron.split()
@@ -93,12 +82,45 @@ def parse_cron(cron: str, ret_quantity: int = None) -> Union[str, list]:
     cron_iter = croniter(cron, str_time_now)
 
     def format_date(d):
-        return f"{d.strftime('%Y-%m-%d %H:%M:%S')} {week_list[int(d.strftime('%u')) - 1]}"
+        return (
+            f"{d.strftime('%Y-%m-%d %H:%M:%S')} {week_list[int(d.strftime('%u')) - 1]}"
+        )
 
     if ret_quantity is None:
         t = cron_iter.get_next(datetime.datetime)
         return format_date(t)
     else:
-        dates = list(itertools.islice(cron_iter.all_next(datetime.datetime), ret_quantity))
+        dates = list(
+            itertools.islice(cron_iter.all_next(datetime.datetime), ret_quantity)
+        )
         formatted_dates = [format_date(d) for d in dates]
         return formatted_dates
+
+
+def encode_url(url, mode=True):
+    """
+    如果已编码则不进行编码
+    :param url:
+    :param mode:True 编码，False 解码
+    :return:
+    """
+
+    decoded_path = unquote(url)
+    is_encode_url = url != decoded_path
+    if mode:
+        return url if is_encode_url else quote(url, safe=":/?#=&")
+    else:
+        return unquote(url) if is_encode_url else url
+
+
+async def schedule_delete_messages(
+    client: Client, chat_id: int, message_ids: int | list, delay_seconds: int = 2
+):
+    """定时删除消息"""
+
+    await asyncio.sleep(delay_seconds)
+
+    try:
+        await client.delete_messages(chat_id, message_ids)
+    except Exception:
+        ...

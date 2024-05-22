@@ -6,9 +6,9 @@ from pyrogram.types import (
     Message,
 )
 
-from api.cloudflare_api import list_zones, list_filters
-from config.config import nodee, cloudflare_cfg, chat_data, write_config
-from tool.utils import is_admin
+from api.cloudflare.cloudflare_api import CloudflareAPI
+from config.config import cf_cfg, chat_data, CloudFlareInfo
+from tools.filters import is_admin
 
 
 # cf账号管理按钮回调
@@ -25,9 +25,9 @@ async def account_add(query: CallbackQuery):
         InlineKeyboardButton("↩️返回账号", callback_data="account_return"),
         InlineKeyboardButton("❌关闭菜单", callback_data="cf_close"),
     ]
-    if nodee():
-        for index, value in enumerate(nodee()):
-            text_t = f"{index + 1} | <code>{value['email']}</code> | <code>{value['global_api_key']}</code>\n"
+    if nodes := cf_cfg.nodes:
+        for index, value in enumerate(nodes):
+            text_t = f"{index + 1} | <code>{value.email}</code> | <code>{value.global_api_key}</code>\n"
             text.append(text_t)
         t = "\n".join(text)
     else:
@@ -64,31 +64,27 @@ async def account_edit(_, message: Message):
     await message.delete()
     if mt[0] != "*":
         try:
-            i = mt.split("\n")
-
-            lz = await list_zones(i[0], i[1])  # 获取区域id
-            lz = lz.json()
+            email, global_api_key = mt.split("\n")[:2]
+            cf = CloudflareAPI(email, global_api_key)
+            lz = await cf.list_zones()  # 获取区域id
             account_id = lz["result"][0]["account"]["id"]
             zone_id = lz["result"][0]["id"]
-            lf = await list_filters(i[0], i[1], zone_id)  # 获取url
-            lf = lf.json()
+            lf = await cf.list_filters(zone_id)  # 获取url
+            lw = await cf.list_workers(account_id)
         except Exception as e:
             await chat_data["ad_message"].answer(text=f"错误：{str(e)}")
         else:
             if lf["result"]:
                 url = lf["result"][0]["pattern"].rstrip("/*")
-                d = {
-                    "url": url,
-                    "email": i[0],
-                    "global_api_key": i[1],
-                    "account_id": account_id,
-                    "zone_id": zone_id,
-                }
-                if cloudflare_cfg["node"]:
-                    cloudflare_cfg["node"].append(d)
-                else:
-                    cloudflare_cfg["node"] = [d]
-                write_config("config/cloudflare_cfg.yaml", cloudflare_cfg)
+                d = CloudFlareInfo(
+                    url=url,
+                    email=email,
+                    global_api_key=global_api_key,
+                    account_id=account_id,
+                    zone_id=zone_id,
+                    worker_name=lw["result"][0]["id"],
+                )
+                cf_cfg.add_node(d)
                 await account_add(chat_data["ad_message"])
             else:
                 text = f"""
@@ -110,6 +106,6 @@ async def account_edit(_, message: Message):
 
     else:
         i = int(mt.split("*")[1])
-        del cloudflare_cfg["node"][i - 1]
-        write_config("config/cloudflare_cfg.yaml", cloudflare_cfg)
+        nodes = cf_cfg.nodes
+        cf_cfg.del_node(nodes[i - 1])
         await account_add(chat_data["ad_message"])

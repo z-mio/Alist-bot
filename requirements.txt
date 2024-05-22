@@ -1,8 +1,11 @@
-PyYAML
+PyYAML~=6.0.1
 APScheduler~=3.10.1
-croniter
-Pyrogram
+croniter~=2.0.1
+Pyrogram~=2.0.106
 TgCrypto
-loguru
-httpx
+loguru~=0.7.2
+httpx~=0.25.1
+uvicorn~=0.27.0.post1
+fastapi~=0.109.0
+starlette~=0.35.1
 prettytable

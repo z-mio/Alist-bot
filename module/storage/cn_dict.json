@@ -102,7 +102,8 @@
     "num_file": "文件数量",
     "num_folder": "文件夹数量",
     "max_file_size": "最大文件大小",
-    "min_file_size": "最小文件大小"
+    "min_file_size": "最小文件大小",
+    "tls_insecure_skip_verify": "跳过SSL证书验证"
   },
   "config_cn": {
     "search": "搜索",

@@ -7,13 +7,13 @@ from pyrogram.types import (
     Message,
 )
 
-from config.config import write_config, chat_data, storage_cfg
+from config.config import chat_data, st_cfg
 from module.storage.storage import (
     st_storage_amend,
     text_dict,
 )
-from tool.utils import is_admin
-from tool.utils import translate_key
+from tools.filters import is_admin
+from tools.utils import translate_key
 
 
 # 取消修改默认配置
@@ -37,13 +37,13 @@ st_storage_cfg_amend_filter = filters.create(_st_storage_cfg_amend_filter)
 async def st_storage_amend_callback(_, __):
     chat_data["st_storage_cfg_amend"] = True
     t = translate_key(
-        translate_key(storage_cfg()["storage"], text_dict["common"]),
+        translate_key(st_cfg.storage, text_dict["common"]),
         text_dict["additional"],
     )
     t = json.dumps(t, indent=4, ensure_ascii=False)
     button = [
         [InlineKeyboardButton("❌取消修改", callback_data="st_storage_cfg_off")],
-        [InlineKeyboardButton("↩️返回存储管理", callback_data="st_return")],
+        [InlineKeyboardButton("↩️返回存储管理", callback_data="re_st_menu")],
     ]
     text = f"""当前配置：
 <code>{t}</code>
@@ -67,14 +67,12 @@ async def st_storage_amend_callback(_, __):
 @Client.on_message(
     filters.text & filters.private & st_storage_cfg_amend_filter & is_admin
 )
-async def st_storage_cfg_amend(client: Client, message: Message):
+async def st_storage_cfg_amend(_, message: Message):
     message_text = message.text
-    await client.delete_messages(
-        chat_id=chat_data["chat_id"], message_ids=chat_data["message_id"]
-    )
+    await message.delete()
     button = [
         [InlineKeyboardButton("🔄重新修改", callback_data="st_storage_cfg_amend")],
-        [InlineKeyboardButton("↩️返回存储管理", callback_data="st_return")],
+        [InlineKeyboardButton("↩️返回存储管理", callback_data="re_st_menu")],
     ]
     try:
         message_text = json.loads(message_text)
@@ -84,14 +82,15 @@ async def st_storage_cfg_amend(client: Client, message: Message):
             reply_markup=InlineKeyboardMarkup(button),
         )
     else:
-        new_dict = {v: k for k, v in text_dict["common"].items()}  # 调换common键和值的位置
+        new_dict = {
+            v: k for k, v in text_dict["common"].items()
+        }  # 调换common键和值的位置
         new_add_dict = {
             v: k for k, v in text_dict["additional"].items()
         }  # 调换additional键和值的位置
         new_dict |= new_add_dict
         t = translate_key(message_text, new_dict)
-        t_d = {"storage": t}
-        write_config("config/storage_cfg.yaml", t_d)
+        st_cfg.storage = t
         await st_storage_amend("", "")
 
     chat_data["st_storage_cfg_amend"] = False

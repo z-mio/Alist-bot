@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 import argparse
+
 import prettytable as pt
 from pyrogram import filters, Client
 from pyrogram.enums.parse_mode import ParseMode
@@ -10,102 +11,83 @@ from pyrogram.types import (
     CallbackQuery,
 )
 
-from api.alist_api import AListAPI
-from tool.scheduler_manager import aps
-from config.config import admin
-
-from tool.utils import is_admin
-
-DOWNLOAD_TOOL = "download_tool"
-DOWNLOAD_PATH = "download_path"
-DOWNLOAD_STRATEGY = "download_strategy"
-DOWNLOAD_URL = "download_url"
+from api.alist.alist_api import alist
+from api.alist.base.storage.get import StorageInfo
+from config.config import bot_cfg, od_cfg
+from tools.filters import is_admin
+from tools.scheduler_manager import aps
 
 # 下载策略
 DOWNLOAD_STRATEGIES = {
     "delete_on_upload_succeed": "上传成功后删除",
     "delete_on_upload_failed": "上传失败时删除",
     "delete_never": "从不删除",
-    "delete_always": "总是删除"
+    "delete_always": "总是删除",
 }
 
-download_params = {
-    DOWNLOAD_TOOL: None,
-    DOWNLOAD_PATH: None,
-    DOWNLOAD_STRATEGY: None,
-    DOWNLOAD_URL: None
-}
-
-storage_mount_path = []
-
-# 离线下载默认设置
-default_setting = {}
+storage_mount_path: list[StorageInfo] = []
 
 
 # 获取下个步骤
 async def _next(client, message, previous_step):
     if previous_step is None:
-        # 不存在默认工具设置
-        if DOWNLOAD_TOOL not in default_setting:
+        if od_cfg.download_tool is None:
             return await message.reply(
                 text="请选择离线下载工具",
-                reply_markup=InlineKeyboardMarkup(await get_offline_download_tool("od_tool_"))
+                reply_markup=InlineKeyboardMarkup(
+                    await get_offline_download_tool("od_tool_")
+                ),
             )
         else:
             return await _next(client, message, "show_tool_menu")
 
     if previous_step == "show_tool_menu":
         # 不存在默认路径设置
-        if DOWNLOAD_PATH not in default_setting:
+        if od_cfg.download_path is None:
             return await message.reply(
                 text="请选择存储路径",
-                reply_markup=InlineKeyboardMarkup(await get_offline_download_path("od_path_"))
+                reply_markup=InlineKeyboardMarkup(
+                    await get_offline_download_path("od_path_")
+                ),
             )
         else:
             return await _next(client, message, "show_path_menu")
 
     if previous_step == "show_path_menu":
         # 不存在默认策略设置
-        if DOWNLOAD_STRATEGY not in default_setting:
+        if od_cfg.download_strategy is None:
             return await message.reply(
                 text="请选择下载策略",
-                reply_markup=InlineKeyboardMarkup(get_offline_download_strategies("od_strategy_"))
+                reply_markup=InlineKeyboardMarkup(
+                    get_offline_download_strategies("od_strategy_")
+                ),
             )
         else:
             return await _next(client, message, "show_strategy_menu")
 
     if previous_step == "show_strategy_menu":
-        res = await AListAPI.offline_download(
-            urls=download_params[DOWNLOAD_URL],
-            tool=default_setting[DOWNLOAD_TOOL] if DOWNLOAD_TOOL in default_setting else download_params[DOWNLOAD_TOOL],
-            path=default_setting[DOWNLOAD_PATH] if DOWNLOAD_PATH in default_setting else download_params[DOWNLOAD_PATH],
-            delete_policy=default_setting[
-                DOWNLOAD_STRATEGY] if DOWNLOAD_STRATEGY in default_setting else download_params[DOWNLOAD_STRATEGY]
+        res = await alist.add_offline_download(
+            urls=od_cfg.download_url,
+            tool=od_cfg.download_tool,
+            path=od_cfg.download_path,
+            delete_policy=od_cfg.download_strategy,
         )
 
-        if res["code"] != 200:
-            return await message.reply(text=f"❌离线任务创建失败，原因如下\n{res['message']}")
+        if res.code != 200:
+            return await message.reply(
+                text=f"❌离线任务创建失败，原因如下\n{res['message']}"
+            )
 
-        content = ["🎉离线任务已创建"]
+        content = ["**🎉离线任务已创建**"]
 
-        for url in download_params[DOWNLOAD_URL]:
-            content.append(f"资源地址：{url}")
-
-        content.append(
-            "离线工具：" +
-            (default_setting[DOWNLOAD_TOOL] if DOWNLOAD_TOOL in default_setting else download_params[DOWNLOAD_TOOL])
+        content.extend(f"资源地址：{url}" for url in od_cfg.download_url)
+        content.extend(
+            (
+                f"离线工具：{od_cfg.download_tool}",
+                f"存储路径：`{od_cfg.download_path}`",
+                f"离线策略：`{od_cfg.download_strategy}`",
+            )
         )
-
-        content.append(
-            "存储路径：" + (default_setting[DOWNLOAD_PATH] if DOWNLOAD_PATH in default_setting else download_params[
-                DOWNLOAD_PATH]))
-
-        content.append("离线策略：" + (
-            DOWNLOAD_STRATEGIES[default_setting[DOWNLOAD_STRATEGY]]
-            if DOWNLOAD_STRATEGY in default_setting
-            else DOWNLOAD_STRATEGIES[download_params[DOWNLOAD_STRATEGY]]
-        ))
-
         await message.reply(text="\n".join(content))
 
         job_id = "offline_download_progress_notify"
@@ -121,42 +103,43 @@ async def _next(client, message, previous_step):
 
 # 下载进度通知
 async def progress_notify(client: Client, job_id: str):
-    undone_resp = await AListAPI.get_offline_download_undone_task()
-    done_resp = await AListAPI.get_offline_download_done_task()
+    undone_resp = await alist.get_offline_download_undone_task()
+    done_resp = await alist.get_offline_download_done_task()
 
-    if len(undone_resp["data"]) == 0:
+    if len(undone_resp.data) == 0:
         aps.remove_job(job_id)
 
-    if len(done_resp["data"]) > 0:
-        await send_message(client, done_resp["data"])
-        await AListAPI.clear_offline_download_done_task()
+    if len(done_resp.data) > 0:
+        await send_message(client, done_resp.data)
+        await alist.clear_offline_download_done_task()
 
 
 # 发送消息
 async def send_message(client, tasks):
-    table = pt.PrettyTable(['File', 'Task', 'Status', 'Reason'])
-    table.align['File'] = 'l'
-    table.valign['Task'] = 'm'
-    table.valign['Status'] = 'm'
-    table.valign['Reason'] = 'm'
+    table = pt.PrettyTable(["File", "Task", "Status", "Reason"])
+    table.align["File"] = "l"
+    table.valign["Task"] = "m"
+    table.valign["Status"] = "m"
+    table.valign["Reason"] = "m"
 
     table._max_width = {"File": 9, "Task": 8, "Status": 7, "Reason": 6}
 
     for task in tasks:
-        table.add_row([
-            task["name"].split(" ")[1],
-            "Download",
-            "Success" if task["state"] == 2 else "Failed",
-            task["error"] if task["state"] != 2 else "-"
-        ],
-            divider=True
+        table.add_row(
+            [
+                task["name"].split(" ")[1],
+                "Download",
+                "Success" if task["state"] == 2 else "Failed",
+                task["error"] if task["state"] != 2 else "-",
+            ],
+            divider=True,
         )
 
     await client.send_message(
-        chat_id=admin,
+        chat_id=bot_cfg.admin,
         disable_web_page_preview=True,
-        text=f'<pre>{table}</pre>'[:4096],
-        parse_mode=ParseMode.HTML
+        text=f"<pre>{table}</pre>"[:4096],
+        parse_mode=ParseMode.HTML,
     )
 
 
@@ -175,11 +158,15 @@ def get_bottom_buttons(prefix, should_have_return=True, should_have_close=True):
 
 # 获取离线下载策略按钮
 def get_offline_download_strategies(prefix):
-    buttons = []
-
-    for key, value in DOWNLOAD_STRATEGIES.items():
-        buttons.append([InlineKeyboardButton(value, callback_data=f"{prefix}{key}")])
-
+    buttons = [
+        [
+            InlineKeyboardButton(
+                select_btn(value, key == od_cfg.download_strategy),
+                callback_data=f"{prefix}{key}",
+            )
+        ]
+        for key, value in DOWNLOAD_STRATEGIES.items()
+    ]
     buttons.append(get_bottom_buttons(prefix))
 
     return buttons
@@ -189,38 +176,60 @@ def get_offline_download_strategies(prefix):
 def parse_command(commands):
     parser = argparse.ArgumentParser(description="Process input arguments.")
 
-    parser.add_argument("urls", metavar="url", type=str, nargs="+",
-                        help="下载文件地址")
-    parser.add_argument("--tool", "-t", dest="tool", type=str, nargs=1,
-                        default=argparse.SUPPRESS,
-                        help="下载工具")
-    parser.add_argument("--path", "-p", dest="path", type=str, nargs=1,
-                        default=argparse.SUPPRESS,
-                        help="存储路径")
-    parser.add_argument("--strategy", "-s", dest="strategy", type=str, nargs=1,
-                        default=argparse.SUPPRESS,
-                        help="下载策略")
+    parser.add_argument("urls", metavar="url", type=str, nargs="+", help="下载文件地址")
+    parser.add_argument(
+        "--tool",
+        "-t",
+        dest="tool",
+        type=str,
+        nargs=1,
+        default=argparse.SUPPRESS,
+        help="下载工具",
+    )
+    parser.add_argument(
+        "--path",
+        "-p",
+        dest="path",
+        type=str,
+        nargs=1,
+        default=argparse.SUPPRESS,
+        help="存储路径",
+    )
+    parser.add_argument(
+        "--strategy",
+        "-s",
+        dest="strategy",
+        type=str,
+        nargs=1,
+        default=argparse.SUPPRESS,
+        help="下载策略",
+    )
 
     return parser.parse_args(commands)
 
 
 # 离线下载
 @Client.on_message(filters.command("od") & filters.private & is_admin)
-async def start(client: Client, message: Message):
+async def od_start(client: Client, message: Message):
     try:
         args = parse_command(message.command[1:])
     except (Exception, SystemExit):
         return await message.reply(
-            text="使用/od命令后加上若干个关键词，系统将下载至对应的存储中 \n例如：\n/od url \n/od url url2 \n",
-            reply_markup=InlineKeyboardMarkup([
+            text="使用`/od`命令后加上若干个关键词，系统将下载至对应的存储中 \n例如：\n`/od url` \n`/od url url2` \n",
+            reply_markup=InlineKeyboardMarkup(
                 [
-                    InlineKeyboardButton("修改默认设置", callback_data=f"od_setting"),
-                    InlineKeyboardButton("还原默认设置", callback_data=f"od_restore")
+                    [
+                        InlineKeyboardButton(
+                            "⚙️修改默认设置", callback_data="od_setting"
+                        ),
+                        InlineKeyboardButton(
+                            "🔄还原默认设置", callback_data="od_restore"
+                        ),
+                    ]
                 ]
-            ])
+            ),
         )
-
-    download_params[DOWNLOAD_URL] = args.urls
+    od_cfg.download_url = args.urls
 
     await _next(client, message, previous_step=None)
 
@@ -229,7 +238,11 @@ async def start(client: Client, message: Message):
 @Client.on_callback_query(filters.regex("(return|close)$"))
 async def bottom_menu_callback(_, query: CallbackQuery):
     # 设置默认项时后退
-    if ['od_update_tool_return', 'od_update_path_return', 'od_update_strategy_return'].count(query.data) > 0:
+    if [
+        "od_update_tool_return",
+        "od_update_path_return",
+        "od_update_strategy_return",
+    ].count(query.data) > 0:
         return await show_setting_menu(_, query)
 
     # 关闭
@@ -240,7 +253,7 @@ async def bottom_menu_callback(_, query: CallbackQuery):
 # 离线下载工具回调
 @Client.on_callback_query(filters.regex("^od_tool_"))
 async def tool_menu_callback(client: Client, query: CallbackQuery):
-    download_params[DOWNLOAD_TOOL] = query.data.removeprefix("od_tool_")
+    od_cfg.download_tool = query.data.removeprefix("od_tool_")
 
     await _next(client, query.message, previous_step="show_tool_menu")
 
@@ -248,7 +261,9 @@ async def tool_menu_callback(client: Client, query: CallbackQuery):
 # 离线存储目录回调
 @Client.on_callback_query(filters.regex("^od_path_"))
 async def path_menu_callback(client: Client, query: CallbackQuery):
-    download_params[DOWNLOAD_PATH] = storage_mount_path[int(query.data.removeprefix("od_path_"))]["mount_path"]
+    od_cfg.download_path = storage_mount_path[
+        int(query.data.removeprefix("od_path_"))
+    ].mount_path
 
     await _next(client, query.message, previous_step="show_path_menu")
 
@@ -256,7 +271,7 @@ async def path_menu_callback(client: Client, query: CallbackQuery):
 # 离线策略回调
 @Client.on_callback_query(filters.regex("^od_strategy_"))
 async def strategy_menu_callback(client: Client, query: CallbackQuery):
-    download_params[DOWNLOAD_STRATEGY] = query.data.removeprefix("od_strategy_")
+    od_cfg.download_strategy = query.data.removeprefix("od_strategy_")
 
     await _next(client, message=query.message, previous_step="show_strategy_menu")
 
@@ -264,14 +279,20 @@ async def strategy_menu_callback(client: Client, query: CallbackQuery):
 # 设置菜单
 @Client.on_callback_query(filters.regex("^od_setting"))
 async def show_setting_menu(_, query: CallbackQuery):
-    await query.message.reply(
+    await query.message.edit(
         text="请选择需要修改的设置项：",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("修改离线工具", callback_data=f"od_edit_tool")],
-            [InlineKeyboardButton("修改存储路径", callback_data=f"od_edit_path")],
-            [InlineKeyboardButton("修改下载策略", callback_data=f"od_edit_strategy")],
-            get_bottom_buttons("od_edit_", should_have_return=False)
-        ])
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("修改离线工具", callback_data="od_edit_tool")],
+                [InlineKeyboardButton("修改存储路径", callback_data="od_edit_path")],
+                [
+                    InlineKeyboardButton(
+                        "修改下载策略", callback_data="od_edit_strategy"
+                    )
+                ],
+                get_bottom_buttons("od_edit_", should_have_return=False),
+            ]
+        ),
     )
 
 
@@ -279,26 +300,32 @@ async def show_setting_menu(_, query: CallbackQuery):
 @Client.on_callback_query(filters.regex("^od_edit_"))
 async def show_setting_sub_menu(_, query: CallbackQuery):
     if query.data == "od_edit_tool":
-        await query.message.reply(
-            text="当前默认离线工具：<b>" +
-                 (default_setting[DOWNLOAD_TOOL] if DOWNLOAD_TOOL in default_setting else "未设置") +
-                 "</b>，你可以修改为以下任意一项",
-            reply_markup=InlineKeyboardMarkup(await get_offline_download_tool("od_update_tool_"))
+        await query.message.edit(
+            text="当前默认离线工具: <b>"
+            + (od_cfg.download_tool or "未设置")
+            + "</b>\n你可以修改为以下任意一项",
+            reply_markup=InlineKeyboardMarkup(
+                await get_offline_download_tool("od_update_tool_")
+            ),
         )
     elif query.data == "od_edit_path":
-        await query.message.reply(
-            text="当前默认存储路径：<b>" +
-                 (default_setting[DOWNLOAD_PATH] if DOWNLOAD_PATH in default_setting else "未设置") +
-                 "</b>，你可以修改为以下任意一项",
-            reply_markup=InlineKeyboardMarkup(await get_offline_download_path("od_update_path_"))
+        await query.message.edit(
+            text="当前默认存储路径: <b>"
+            + (od_cfg.download_path or "未设置")
+            + "</b>\n你可以修改为以下任意一项",
+            reply_markup=InlineKeyboardMarkup(
+                await get_offline_download_path("od_update_path_")
+            ),
         )
 
     elif query.data == "od_edit_strategy":
-        await query.message.reply(
-            text="当前默认下载策略：<b>" +
-                 (default_setting[DOWNLOAD_STRATEGY] if DOWNLOAD_STRATEGY in default_setting else "未设置") +
-                 "</b>，你可以修改为以下任意一项",
-            reply_markup=InlineKeyboardMarkup(get_offline_download_strategies("od_update_strategy_"))
+        await query.message.edit(
+            text="当前默认下载策略: <b>"
+            + (od_cfg.download_strategy or "未设置")
+            + "</b>\n你可以修改为以下任意一项",
+            reply_markup=InlineKeyboardMarkup(
+                get_offline_download_strategies("od_update_strategy_")
+            ),
         )
 
 
@@ -306,46 +333,62 @@ async def show_setting_sub_menu(_, query: CallbackQuery):
 @Client.on_callback_query(filters.regex("^od_update_"))
 async def update_setting(_, query: CallbackQuery):
     value = query.data
-
     if value.startswith("od_update_tool_"):
-        default_setting[DOWNLOAD_TOOL] = value.removeprefix("od_update_tool_")
-        await query.message.reply(text=f"✅默认离线工具设置成功")
+        od_cfg.download_tool = value.removeprefix("od_update_tool_")
+        await query.message.edit_text(
+            text="**⚙️默认离线工具设置成功**",
+            reply_markup=InlineKeyboardMarkup(
+                await get_offline_download_tool("od_update_tool_")
+            ),
+        )
     elif value.startswith("od_update_path_"):
-        default_setting[DOWNLOAD_PATH] = storage_mount_path[int(value.removeprefix("od_update_path_"))]["mount_path"]
-        await query.message.reply(text=f"✅默认存储路径设置成功")
+        od_cfg.download_path = storage_mount_path[
+            int(value.removeprefix("od_update_path_"))
+        ].mount_path
+        await query.message.edit_text(
+            text="**⚙️默认存储路径设置成功**",
+            reply_markup=InlineKeyboardMarkup(
+                await get_offline_download_path("od_update_path_")
+            ),
+        )
     elif value.startswith("od_update_strategy_"):
-        default_setting[DOWNLOAD_STRATEGY] = value.removeprefix("od_update_strategy_")
-        await query.message.reply(text=f"✅默认下载策略设置成功")
+        od_cfg.download_strategy = value.removeprefix("od_update_strategy_")
+        await query.message.edit_text(
+            text="**⚙️默认下载策略设置成功**",
+            reply_markup=InlineKeyboardMarkup(
+                get_offline_download_strategies("od_update_strategy_")
+            ),
+        )
 
 
 # 还原设置项
 @Client.on_callback_query(filters.regex("^od_restore"))
 async def restore_setting(_, query: CallbackQuery):
-    global default_setting
-
-    default_setting = {}
-
-    await query.message.reply(text=f"✅离线下载设置已还原")
+    od_cfg.download_tool = None
+    od_cfg.download_strategy = None
+    od_cfg.download_path = None
+    await query.message.edit(text="✅离线下载设置已还原")
 
 
 # 获取存储并写入列表
 async def get_offline_download_path(prefix):
-    global storage_mount_path
+    st_info = (await alist.storage_list()).data
 
-    buttons = []
+    storage_mount_path.clear()
+    storage_mount_path.extend(st_info)
 
-    response = await AListAPI.storage_list()
-
-    storage_mount_path = response["data"]["content"]
-
-    for index in range(len(storage_mount_path)):
-        buttons.append([
+    buttons = [
+        [
             InlineKeyboardButton(
-                text=storage_mount_path[index]["mount_path"],
+                text=select_btn(
+                    mp := storage_mount_path[index].mount_path,
+                    mp == od_cfg.download_path,
+                ),
                 callback_data=prefix + str(index),
             )
-        ])
-
+        ]
+        for index in range(len(storage_mount_path))
+    ]
     buttons.append(get_bottom_buttons(prefix))
 
     return buttons
@@ -353,20 +396,23 @@ async def get_offline_download_path(prefix):
 
 # 获取离线下载工具
 async def get_offline_download_tool(prefix):
-    buttons = []
+    response = await alist.get_offline_download_tools()  # 获取离线下载工具列表
 
-    response = await AListAPI.get_offline_download_tools()  # 获取离线下载工具列表
+    response.data.sort()
 
-    response["data"].sort()
-
-    for item in response["data"]:
-        buttons.append([
+    buttons = [
+        [
             InlineKeyboardButton(
-                item,
-                callback_data=prefix + item
+                select_btn(item, item == od_cfg.download_tool),
+                callback_data=prefix + item,
             )
-        ])
-
+        ]
+        for item in response.data
+    ]
     buttons.append(get_bottom_buttons(prefix))
 
     return buttons
+
+
+def select_btn(text: str, b: bool):
+    return f"✅{text}" if b else text
