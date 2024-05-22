@@ -229,10 +229,10 @@ path:
 **1.新建 bot 配置文件目录**
 
 ```shell
-mkdir -p /root/alist-bot/config
+mkdir -p /root/alist-bot
 ```
 
-**2.编写 `config.yaml` 放至你创建的路径下 `/root/alist-bot/config`**
+**2.编写 `config.yaml` 放至你创建的路径下 `/root/alist-bot`**
 
 ```yaml
 alist:
