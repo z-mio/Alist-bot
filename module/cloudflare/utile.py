@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 import httpx
 from httpx import AsyncClient
+from loguru import logger
 
 from api.cloudflare.base import WorkerInfo
 from api.cloudflare.cloudflare_api import CloudflareAPI
@@ -30,6 +31,8 @@ async def check_node_status(url: str, cli: AsyncClient = None) -> NodeStatus:
                 response = await client.get(f"https://{url}")
     except httpx.ConnectError:
         return NodeStatus(url, 502)
+    finally:
+        logger.info(f"节点: {url}|状态码: {response.status_code}")
     return NodeStatus(*status_code_map.get(response.status_code, [url, 502]))
 
 
@@ -77,9 +80,6 @@ async def get_node_info(day: int, info: CloudFlareInfo) -> NodeInfo:
 def re_remark(remark: str, node: str):
     if "节点：" in remark:
         return "\n".join(
-            [
-                f"节点：{node}" if "节点：" in line else line
-                for line in remark.split("\n")
-            ]
+            [f"节点：{node}" if "节点：" in line else line for line in remark.split("\n")]
         )
     return f"节点：{node}\n{remark}"

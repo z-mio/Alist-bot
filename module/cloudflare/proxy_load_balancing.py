@@ -4,7 +4,7 @@ import random
 import httpx
 from fastapi import Response
 from loguru import logger
-from starlette.responses import RedirectResponse, PlainTextResponse
+from starlette.responses import RedirectResponse, PlainTextResponse, FileResponse
 
 from api.alist.alist_api import alist
 from api.alist.base import SettingInfo
@@ -30,13 +30,10 @@ async def redirect_path(path: str):
 
     r = await available_nodes()
     if not r:
-        return RedirectResponse(
-            url="网站的下载节点流量已全部用完，早上8点自动恢复", status_code=302
+        return FileResponse(
+            path="./module/cloudflare/warning.txt",
+            filename="网站的下载节点流量已全部用完 早上8点自动恢复.txt",
         )
-        # return Response(
-        #     content="节点流量已全部用完，早上8点自动恢复。",
-        #     media_type="text/plain; charset=utf-8",
-        # )
     new_url = f"https://{r}/{path}?sign={alist.sign(f'/{path}')}"
     ext = path.split(".")[-1]
     if ext in TEXT_TYPES:
