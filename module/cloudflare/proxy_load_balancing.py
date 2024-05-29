@@ -91,7 +91,7 @@ async def refresh_nodes_regularly():
     #     for result in await asyncio.gather(*tasks, return_exceptions=True)
     #     if not isinstance(result, BaseException) and result[1] < 100000
     # ]
-    tasks = [check_node_status(node.url, async_client) for node in cf_cfg.nodes]
+    tasks = [check_node_status(node.url) for node in cf_cfg.nodes]
     r = await asyncio.gather(*tasks, return_exceptions=True)
     node_list = []
     for i in r:
