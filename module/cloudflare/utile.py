@@ -31,8 +31,6 @@ async def check_node_status(url: str, cli: AsyncClient = None) -> NodeStatus:
                 response = await client.get(f"https://{url}")
     except httpx.ConnectError:
         return NodeStatus(url, 502)
-    finally:
-        logger.info(f"节点: {url}|状态码: {response.status_code}")
     return NodeStatus(*status_code_map.get(response.status_code, [url, 502]))
 
 

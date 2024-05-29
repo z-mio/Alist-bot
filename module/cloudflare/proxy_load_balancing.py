@@ -92,10 +92,14 @@ async def refresh_nodes_regularly():
     #     if not isinstance(result, BaseException) and result[1] < 100000
     # ]
     tasks = [check_node_status(node.url, async_client) for node in cf_cfg.nodes]
-    node_list = [
-        i.url
-        for i in await asyncio.gather(*tasks, return_exceptions=True)
-        if not isinstance(i, BaseException) and i.status == 200
-    ]
+    r = await asyncio.gather(*tasks, return_exceptions=True)
+    node_list = []
+    for i in r:
+        if isinstance(i, BaseException):
+            logger.error(f'刷新节点错误: {i}')
+            continue
+        if i.status == 200:
+            node_list.append(i.url)
+
     chat_data["node_list"] = node_list
     logger.info(f"节点已刷新 | {node_list}")
