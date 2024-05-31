@@ -26,6 +26,7 @@ async def check_node_status(url: str, cli: AsyncClient = None) -> NodeStatus:
     try:
         if cli:
             response = await cli.get(f"https://{url}")
+
         else:
             async with httpx.AsyncClient() as client:
                 response = await client.get(f"https://{url}")

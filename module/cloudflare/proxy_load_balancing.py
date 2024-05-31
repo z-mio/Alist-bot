@@ -16,7 +16,8 @@ from tools.scheduler_manager import aps
 from tools.utils import encode_url
 
 TEXT_TYPES = []
-async_client = httpx.AsyncClient()
+limits = httpx.Limits(max_keepalive_connections=100, max_connections=1000)
+async_client = httpx.AsyncClient(limits=limits)
 
 
 @fast.get("/{path:path}")
