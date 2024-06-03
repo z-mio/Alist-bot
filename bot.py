@@ -1,8 +1,5 @@
 # -*- coding: UTF-8 -*-
 import asyncio
-import os
-import platform
-import time
 
 import httpx
 import pyrogram
@@ -16,11 +13,6 @@ from pyrogram.types import BotCommand, Message
 from api.alist.alist_api import alist
 from config.config import bot_cfg, plb_cfg
 from tools.filters import is_admin
-
-# 如果当前操作系统不是 Windows，则设置环境变量 TZ 为 'Asia/Shanghai'
-if platform.system() != "Windows":
-    os.environ["TZ"] = "Asia/Shanghai"
-    time.tzset()
 
 logger.add("logs/bot.log", rotation="5 MB")
 
