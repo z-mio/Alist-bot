@@ -107,6 +107,6 @@ if __name__ == "__main__":
     checking()
     from module.init import init_task
 
-    init_task()
+    init_task(app)
     run_fastapi()
     app.run()

@@ -64,7 +64,7 @@ async def send_backup_file(_, message: Message):
 
 
 # 定时任务——发送备份文件
-async def recovery_send_backup_file(cli):
+async def recovery_send_backup_file(cli: Client):
     bc_file_name = await backup_config()
     await cli.send_document(
         chat_id=bot_cfg.admin, document=bc_file_name, caption="#Alist配置定时备份"
@@ -86,7 +86,7 @@ def start_timed_backup(app):
 
 # 设置备份时间&开启定时备份
 @Client.on_message(filters.command("sbt") & filters.private & is_admin)
-async def set_backup_time(_, message: Message):
+async def set_backup_time(cli: Client, message: Message):
     mtime = " ".join(message.command[1:])
     if len(mtime.split()) == 5:
         bot_cfg.backup_time = mtime
@@ -103,6 +103,7 @@ async def set_backup_time(_, message: Message):
                 func=recovery_send_backup_file,
                 trigger=CronTrigger.from_crontab(bot_cfg.backup_time),
                 job_id="send_backup_messages_regularly_id",
+                args=[cli],
             )
             text = f"已开启定时备份！\n下一次备份时间：{next_run_time}"
         await message.reply(text)
